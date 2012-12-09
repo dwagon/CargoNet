@@ -8,13 +8,14 @@ import random
 import sys
 import os
 
+import cargo
+
 ################################################################################
 class Node(object):
     def __init__(self, x, y):
         self.x=x
         self.y=y
         self.cargo=[]
-        self.tmpcargo=[]
         self.demand=0
         self.floodval=-999
         self.neighbours=set()
@@ -91,8 +92,14 @@ class Map(object):
         self.width=width
         self.floodcount=0
         self.height=height
+        self.cargo=[]
         self.generateMap()
         self.assignNeighbours()
+
+    ############################################################################
+    def addCargo(self, loc):
+        c=cargo.Cargo(self, loc)
+        self.cargo.append(c)
 
     ############################################################################
     def generateMap(self):
@@ -167,11 +174,17 @@ class Map(object):
         return ''.join(out)
 
     ############################################################################
+    def getDest(self, loc):
+        """ Return the location of the demand to satisfy for a cargo 
+        at location 'loc'
+        """
+        return None
+
+    ############################################################################
     def turn_initialise(self):
         # Level the field
         for n in self.nodes.values():
             n.floodval=-999
-            n.tmpcargo=n.cargo
 
     ############################################################################
     def turn_calcdemand(self):
@@ -183,58 +196,49 @@ class Map(object):
 
     ############################################################################
     def satisfyDemand(self, node):
-        while node.demand and node.cargo:
-            o=node.cargo.pop()
-            node.demand-=1
+        numcargo=len([x for x in self.cargo if x.loc==node])
+        while node.demand and numcargo:
+            for c in self.cargo[:]:
+                if c.loc==node:
+                    node.demand-=1
+                    self.cargo.remove(c)
+                    numcargo-=1
+                if node.demand<=0:      # Don't satisfy demand twice
+                    break
 
-    ############################################################################
-    def moveCargo(self, src, target):
-        o=src.cargo.pop()
-        target.tmpcargo.append(o)
-        
     ############################################################################
     def turn_satisfy_neighbours(self):
         # If you are next to a demand satisfy one of them
-        for n in self.nodes.values():
-            if n.cargo:
-                nb=[x for x in n.neighbours if x.demand]
-                if nb:
-                    target=random.choice(nb)
-                    self.moveCargo(n,target)
-                    self.satisfyDemand(target)
+        for c in self.cargo:
+            nb=[x for x in c.loc.neighbours if x.demand]
+            if nb:
+                target=random.choice(nb)
+                c.move(target)
+                self.satisfyDemand(target)
 
     ############################################################################
     def turn_move_cargo(self):
         # For everything that has something move it towards the demand
         moves=0
-        for n in self.nodes.values():
-            if n.cargo:
-                possibleDirections=list(n.pickDirection())
-                if not possibleDirections:
-                    continue
-                target=random.choice(possibleDirections)     # If all options equal pick one at random
-                if not n.cargo:    # None left
-                    break
-                self.moveCargo(n,target)
-                moves+=1
-        return moves
+        for c in self.cargo:
+            possibleDirections=list(c.loc.pickDirection())
+            if not possibleDirections:
+                continue
+            target=random.choice(possibleDirections)     # If all options equal pick one at random
+            c.move(target)
+            moves+=1
 
-    ############################################################################
-    def turn_activate_changes(self):
-        # Activate the changes
-        for n in self.nodes.values():
-            n.cargo=n.tmpcargo
-            if n.cargo and n.demand:
-                self.satisfyDemand(n)
+        return moves
 
     ############################################################################
     def turn(self):
         moves=0
         self.turn_initialise()
+        for c in self.cargo:
+            c.turn()
         self.turn_calcdemand()
         self.turn_satisfy_neighbours()
         moves+=self.turn_move_cargo()
-        self.turn_activate_changes()
         return moves
 
 ################################################################################

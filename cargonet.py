@@ -5,7 +5,6 @@ import pygame
 import random
 from pygame.locals import *
 import smap
-import cargo
 
 windowWidth=1024
 windowHeight=768
@@ -17,19 +16,25 @@ def drawMap(wm, screen, font, turn):
     screen.fill((0,0,0))
 
     for n in wm.nodes.values():
+        numcargo=0
+        for c in wm.cargo:
+            if c.loc==n:
+                numcargo+=1
+
         r=pygame.Rect(n.x*xsize,n.y*ysize,xsize,ysize)
         screen.blit(n.image,r)
         if n.demand:
             textobj=font.render("%d" % n.demand,1,(255,0,0))
             screen.blit(textobj,r)
-        elif n.cargo:
-            textobj=font.render("%d" % len(n.cargo),1,(0,0,255))
+        elif numcargo:
+            textobj=font.render("%d" % numcargo,1,(0,0,255))
             screen.blit(textobj,r)
         else:
             if n.transport:
                 textobj=font.render("%d" % n.floodval,1,(255,255,255))
                 screen.blit(textobj,r)
-    drawText("Turn %d" % turn, font, screen, 0,0)
+
+    drawText("Turn %d - Cargo %d" % (turn, len(wm.cargo)), font, screen, 0,0)
 
 ################################################################################
 def waitForPlayerToPressKey():
@@ -62,10 +67,10 @@ def loop(wm, screen, font, turn, src):
     drawMap(wm, screen, font, turn)
     pygame.display.update()
     #waitForPlayerToPressKey()
-    if random.randrange(5)==1:
+    if random.randrange(4)==1:
         dst=findGrassland(wm)
-        dst.demand=random.randrange(15)
-    src.cargo.append(cargo.Cargo())
+        dst.demand=random.randrange(10)
+    wm.addCargo(src)
     wm.turn()
 
 ################################################################################
@@ -87,12 +92,10 @@ def main():
     screen=pygame.display.set_mode((windowWidth,windowHeight),DOUBLEBUF)
     wm=smap.Map(windowHeight/32,windowWidth/32)
     font = pygame.font.SysFont(None, 24)
-    src=findGrassland(wm)
-    for i in range(8):
-        src.cargo.append(cargo.Cargo())
-    src=findGrassland(wm)
-    for i in range(8):
-        src.cargo.append(cargo.Cargo())
+    for j in range(5):
+        src=findGrassland(wm)
+        for i in range(8):
+            wm.addCargo(src)
     dst=findGrassland(wm)
     dst.demand=10
     dst=findGrassland(wm)
@@ -101,12 +104,11 @@ def main():
     while True:
         turn+=1
         loop(wm, screen, font, turn, src)
-        sys.stderr.write("turn=%d\n" % turn)
 
 ################################################################################
 if __name__=="__main__":
-    import cProfile as profile
-    profile.run("main()")
-    #main()
+    #import cProfile as profile
+    #profile.run("main()")
+    main()
 
 #EOF
