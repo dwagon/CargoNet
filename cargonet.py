@@ -5,6 +5,7 @@ import pygame
 import random
 from pygame.locals import *
 import smap
+import cargo
 
 windowWidth=1024
 windowHeight=768
@@ -21,8 +22,8 @@ def drawMap(wm, screen, font, turn):
         if n.demand:
             textobj=font.render("%d" % n.demand,1,(255,0,0))
             screen.blit(textobj,r)
-        elif n.amount:
-            textobj=font.render("%d" % n.amount,1,(0,0,255))
+        elif n.cargo:
+            textobj=font.render("%d" % len(n.cargo),1,(0,0,255))
             screen.blit(textobj,r)
         else:
             if n.transport:
@@ -64,7 +65,7 @@ def loop(wm, screen, font, turn, src):
     if random.randrange(5)==1:
         dst=findGrassland(wm)
         dst.demand=random.randrange(15)
-    src.amount+=1
+    src.cargo.append(cargo.Cargo())
     wm.turn()
 
 ################################################################################
@@ -87,9 +88,11 @@ def main():
     wm=smap.Map(windowHeight/32,windowWidth/32)
     font = pygame.font.SysFont(None, 24)
     src=findGrassland(wm)
-    src.amount=8
+    for i in range(8):
+        src.cargo.append(cargo.Cargo())
     src=findGrassland(wm)
-    src.amount=8
+    for i in range(8):
+        src.cargo.append(cargo.Cargo())
     dst=findGrassland(wm)
     dst.demand=10
     dst=findGrassland(wm)
