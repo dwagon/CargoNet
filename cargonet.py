@@ -16,23 +16,21 @@ def drawMap(wm, screen, font, turn):
     screen.fill((0,0,0))
 
     for n in wm.nodes.values():
-        numcargo=0
-        for c in wm.cargo:
-            if c.loc==n:
-                numcargo+=1
 
         r=pygame.Rect(n.x*xsize,n.y*ysize,xsize,ysize)
         screen.blit(n.image,r)
-        if n.demand:
-            textobj=font.render("%d" % n.demand,1,(255,0,0))
+        if n.demand.get('Stone',0)!=0 or n.demand.get('Timber',0)!=0:
+            textobj=font.render("%d/%d" % (n.demand.get('Stone',0), n.demand.get('Timber',0)),1,(255,0,0))
             screen.blit(textobj,r)
-        elif numcargo:
-            textobj=font.render("%d" % numcargo,1,(0,0,255))
+            continue
+        numcargo={'Stone':0, 'Timber':0}
+        for c in wm.cargo:
+            if c.loc==n:
+                numcargo[c.label]+=1
+        if numcargo['Stone']!=0 or numcargo['Timber']!=0:
+            textobj=font.render("%d/%d" % (numcargo['Stone'], numcargo['Timber']),1,(0,0,255))
             screen.blit(textobj,r)
-        else:
-            if n.transport:
-                textobj=font.render("%d" % n.floodval,1,(255,255,255))
-                screen.blit(textobj,r)
+            continue
 
     drawText("Turn %d - Cargo %d" % (turn, len(wm.cargo)), font, screen, 0,0)
 
@@ -60,7 +58,7 @@ def drawText(text, font, surface, x, y, colour=(0,0,0)):
     surface.blit(textobj, textrect)
 
 ################################################################################
-def loop(wm, screen, font, turn, src):
+def loop(wm, screen, font, turn):
     for event in pygame.event.get():
         if event.type==QUIT:
             terminate()
@@ -68,47 +66,34 @@ def loop(wm, screen, font, turn, src):
     pygame.display.update()
     #waitForPlayerToPressKey()
     if random.randrange(4)==1:
-        dst=findGrassland(wm)
-        dst.demand=random.randrange(10)
-    wm.addCargo(src)
+        dst=wm.findGrassland()
+        wm.demandTimber(dst, random.randrange(10))
+    if random.randrange(4)==1:
+        dst=wm.findGrassland()
+        wm.demandStone(dst, random.randrange(10))
+    src=wm.findMountain()
+    wm.addStone(src)
+    src=wm.findWoodland()
+    wm.addTimber(src)
     wm.turn()
 
-################################################################################
-def findGrassland(wm):
-    count=100
-    while True:
-        count-=1
-        x=random.randrange(wm.width)
-        y=random.randrange(wm.height)
-        if wm[(x,y)].__class__.__name__=='Grassland':
-            return wm[(x,y)]
-        if not count:
-            sys.stderr.write("Couldn't find any grassland\n")
-            return None
-    
 ################################################################################
 def main():
     pygame.init()
     screen=pygame.display.set_mode((windowWidth,windowHeight),DOUBLEBUF)
     wm=smap.Map(windowHeight/32,windowWidth/32)
     font = pygame.font.SysFont(None, 24)
-    for j in range(5):
-        src=findGrassland(wm)
-        for i in range(8):
-            wm.addCargo(src)
-    dst=findGrassland(wm)
-    dst.demand=10
-    dst=findGrassland(wm)
-    dst.demand=5
     turn=0
     while True:
         turn+=1
-        loop(wm, screen, font, turn, src)
+        loop(wm, screen, font, turn)
+        if turn==100:
+            sys.exit(1)
 
 ################################################################################
 if __name__=="__main__":
-    #import cProfile as profile
-    #profile.run("main()")
+    import cProfile as profile
+    profile.run("main()")
     main()
 
 #EOF

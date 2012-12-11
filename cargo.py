@@ -10,9 +10,16 @@ class Cargo(object):
 
     def turn(self):
         if not self.dest:
-            self.dest=smap.getDest(self.loc)
+            self.dest=self.smap.getDest(self.loc)
 
     def move(self, target):
         self.loc=target
 
+
+class Stone(Cargo):
+    label='Stone'
+
+class Timber(Cargo):
+    label='Timber'
+	
 #EOF

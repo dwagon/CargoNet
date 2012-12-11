@@ -16,12 +16,25 @@ class Node(object):
         self.x=x
         self.y=y
         self.cargo=[]
-        self.demand=0
+        self.demand={}
+        self.floodcount=0
         self.floodval=-999
         self.neighbours=set()
         self.transport=True
         self.image=None
                 
+    ############################################################################
+    def demandStone(self, count=1):
+        if 'Stone' not in self.demand:
+            self.demand['Stone']=0
+        self.demand['Stone']+=count
+
+    ############################################################################
+    def demandTimber(self, count=1):
+        if 'Timber' not in self.demand:
+            self.demand['Timber']=0
+        self.demand['Timber']+=count
+            
     ############################################################################
     def pickDirection(self):
         """ Return all the nodes that have the highest floodval"""
@@ -90,16 +103,49 @@ class Map(object):
     def __init__(self, height=5, width=5):
         self.nodes={}
         self.width=width
-        self.floodcount=0
         self.height=height
         self.cargo=[]
+        self.types=['Stone', 'Timber']
         self.generateMap()
         self.assignNeighbours()
 
     ############################################################################
-    def addCargo(self, loc):
-        c=cargo.Cargo(self, loc)
-        self.cargo.append(c)
+    def addCargo(self, typ, loc, count=1):
+        if typ=='Stone':
+            self.addStone(loc, count)
+        elif typ=='Timber':
+            self.addTimber(loc, count)
+        else:
+            Warning("Unknown Type in addCargo() %s" % typ)
+
+    ############################################################################
+    def addStone(self, loc, count=1):
+        for i in range(count):
+            c=cargo.Stone(self, loc)
+            self.cargo.append(c)
+
+    ############################################################################
+    def addTimber(self, loc, count=1):
+        for i in range(count):
+            c=cargo.Timber(self, loc)
+            self.cargo.append(c)
+
+    ############################################################################
+    def demandStone(self, loc, count=1):
+        loc.demandStone(count)
+
+    ############################################################################
+    def demandTimber(self, loc, count=1):
+        loc.demandTimber(count)
+
+    ############################################################################
+    def demand(self, typ, loc, count=1):
+        if typ=='Stone':
+            self.demandStone(loc, count)
+        elif typ=='Timber':
+            self.demandTimber(loc, count)
+        else:
+            Warning("Unknown Type in demand() %s" % typ)
 
     ############################################################################
     def generateMap(self):
@@ -137,6 +183,8 @@ class Map(object):
         
     ############################################################################
     def assignNeighbours(self):
+        """ Create a list of all neighbouring squares that are transportable to
+        """
         for node in self.nodes.values():
             for u in (-1,0,1):
                 for v in (-1,0,1):
@@ -147,7 +195,7 @@ class Map(object):
                     if (tmpx,tmpy) in self.nodes:
                         if self.nodes[(tmpx,tmpy)].transport:
                             node.neighbours.add(self.nodes[(tmpx,tmpy)])
-        
+
     ############################################################################
     def __getitem__(self,key):
         return self.nodes[key]
@@ -181,46 +229,49 @@ class Map(object):
         return None
 
     ############################################################################
-    def turn_initialise(self):
+    def turn_reset_flood(self):
         # Level the field
         for n in self.nodes.values():
             n.floodval=-999
 
     ############################################################################
-    def turn_calcdemand(self):
+    def turn_calcdemand(self, typ):
         # Flood out the demand
         for n in self.nodes.values():
             self.floodcount=0
-            if n.demand:
-                self.flood(n,n.demand)
+            if n.demand.get(typ,0):
+                self.flood(n,n.demand[typ])
 
     ############################################################################
-    def satisfyDemand(self, node):
-        numcargo=len([x for x in self.cargo if x.loc==node])
-        while node.demand and numcargo:
-            for c in self.cargo[:]:
-                if c.loc==node:
-                    node.demand-=1
-                    self.cargo.remove(c)
-                    numcargo-=1
-                if node.demand<=0:      # Don't satisfy demand twice
-                    break
+    def satisfyDemand(self, node, typ):
+        for c in self.cargo[:]:
+            if c.label!=typ:
+                continue
+            if c.loc==node:
+                node.demand[typ]-=1
+                self.cargo.remove(c)
+            if node.demand[typ]<=0:      # Don't satisfy demand twice
+                break
 
     ############################################################################
-    def turn_satisfy_neighbours(self):
+    def turn_satisfy_neighbours(self, typ):
         # If you are next to a demand satisfy one of them
         for c in self.cargo:
-            nb=[x for x in c.loc.neighbours if x.demand]
+            if c.label!=typ:
+                continue
+            nb=[x for x in c.loc.neighbours if x.demand.get(typ,0)]
             if nb:
                 target=random.choice(nb)
                 c.move(target)
-                self.satisfyDemand(target)
+                self.satisfyDemand(target, typ)
 
     ############################################################################
-    def turn_move_cargo(self):
+    def turn_move_cargo(self, typ):
         # For everything that has something move it towards the demand
         moves=0
         for c in self.cargo:
+            if c.label!=typ:
+                continue
             possibleDirections=list(c.loc.pickDirection())
             if not possibleDirections:
                 continue
@@ -233,13 +284,37 @@ class Map(object):
     ############################################################################
     def turn(self):
         moves=0
-        self.turn_initialise()
         for c in self.cargo:
             c.turn()
-        self.turn_calcdemand()
-        self.turn_satisfy_neighbours()
-        moves+=self.turn_move_cargo()
+        for typ in self.types:
+            self.turn_reset_flood()
+            self.turn_calcdemand(typ)
+            self.turn_satisfy_neighbours(typ)
+            moves+=self.turn_move_cargo(typ)
         return moves
+
+    ############################################################################
+    def findGrassland(self):
+        return self.findType('Grassland')
+
+    ############################################################################
+    def findWoodland(self):
+        return self.findType('Woodland')
+
+    ############################################################################
+    def findMountain(self):
+        return self.findType('Mountain')
+
+    ############################################################################
+    def findType(self, typ):
+        nodelist=self.nodes.values()
+        random.shuffle(nodelist)
+        for n in nodelist:
+            if n.__class__.__name__==typ:
+                if n.neighbours:
+                    return n
+        sys.stderr.write("Couldn't find any %s\n" % typ)
+        return None
 
 ################################################################################
 def main():
