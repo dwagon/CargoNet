@@ -49,10 +49,10 @@ class Game(object):
         while True:
             for event in pygame.event.get():
                 if event.type == QUIT:
-                    terminate()
+                    self.terminate()
                 if event.type == KEYDOWN:
                     if event.key == K_ESCAPE: # pressing escape quits
-                        terminate()
+                        self.terminate()
                     return
 
     ############################################################################
@@ -72,10 +72,10 @@ class Game(object):
         self.turn+=1
         for event in pygame.event.get():
             if event.type==QUIT:
-                terminate()
+                self.terminate()
         self.drawMap()
         pygame.display.update()
-        #waitForPlayerToPressKey()
+        #self.waitForPlayerToPressKey()
         if random.randrange(4)==1:
             dst=self.wm.findGrassland()
             self.wm.demandTimber(dst, random.randrange(10))
