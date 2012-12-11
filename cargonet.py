@@ -10,90 +10,94 @@ windowWidth=1024
 windowHeight=768
 
 ################################################################################
-def drawMap(wm, screen, font, turn):
-    xsize=32
-    ysize=32
-    screen.fill((0,0,0))
-
-    for n in wm.nodes.values():
-
-        r=pygame.Rect(n.x*xsize,n.y*ysize,xsize,ysize)
-        screen.blit(n.image,r)
-        if n.demand.get('Stone',0)!=0 or n.demand.get('Timber',0)!=0:
-            textobj=font.render("%d/%d" % (n.demand.get('Stone',0), n.demand.get('Timber',0)),1,(255,0,0))
-            screen.blit(textobj,r)
-            continue
-        numcargo={'Stone':0, 'Timber':0}
-        for c in wm.cargo:
-            if c.loc==n:
-                numcargo[c.label]+=1
-        if numcargo['Stone']!=0 or numcargo['Timber']!=0:
-            textobj=font.render("%d/%d" % (numcargo['Stone'], numcargo['Timber']),1,(0,0,255))
-            screen.blit(textobj,r)
-            continue
-
-    drawText("Turn %d - Cargo %d" % (turn, len(wm.cargo)), font, screen, 0,0)
-
 ################################################################################
-def waitForPlayerToPressKey():
-    while True:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                terminate()
-            if event.type == KEYDOWN:
-                if event.key == K_ESCAPE: # pressing escape quits
+################################################################################
+class Game(object):
+    def __init__(self):
+        pygame.init()
+        self.screen=pygame.display.set_mode((windowWidth,windowHeight),DOUBLEBUF)
+        self.wm=smap.Map(windowHeight/32,windowWidth/32)
+        self.font = pygame.font.SysFont(None, 24)
+        self.turn=0
+
+    ############################################################################
+    def drawMap(self):
+        xsize=32
+        ysize=32
+        self.screen.fill((0,0,0))
+
+        for n in self.wm.nodes.values():
+            r=pygame.Rect(n.x*xsize,n.y*ysize,xsize,ysize)
+            self.screen.blit(n.image,r)
+            if n.demand.get('Stone',0)!=0 or n.demand.get('Timber',0)!=0:
+                textobj=self.font.render("%s/%s" % (n.demand.get('Stone','-'), n.demand.get('Timber','-')),1,(255,0,0))
+                self.screen.blit(textobj,r)
+                continue
+            numcargo={'Stone':0, 'Timber':0}
+            for c in self.wm.cargo:
+                if c.loc==n:
+                    numcargo[c.label]+=1
+            if numcargo['Stone']!=0 or numcargo['Timber']!=0:
+                textobj=self.font.render("%d/%d" % (numcargo['Stone'], numcargo['Timber']),1,(0,0,255))
+                self.screen.blit(textobj,r)
+                continue
+
+        self.drawText("Turn %d - Cargo %d" % (self.turn, len(self.wm.cargo)), 0,0)
+
+    ############################################################################
+    def waitForPlayerToPressKey(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == QUIT:
                     terminate()
-                return
+                if event.type == KEYDOWN:
+                    if event.key == K_ESCAPE: # pressing escape quits
+                        terminate()
+                    return
 
-################################################################################
-def terminate():
-    pygame.quit()
-    sys.exit()
+    ############################################################################
+    def terminate(self):
+        pygame.quit()
+        sys.exit()
 
-################################################################################
-def drawText(text, font, surface, x, y, colour=(0,0,0)):
-    textobj = font.render(text, 1, colour)
-    textrect = textobj.get_rect()
-    textrect.topleft = (x, y)
-    surface.blit(textobj, textrect)
+    ############################################################################
+    def drawText(self, text, x, y, colour=(0,0,0)):
+        textobj = self.font.render(text, 1, colour)
+        textrect = textobj.get_rect()
+        textrect.topleft = (x, y)
+        self.screen.blit(textobj, textrect)
 
-################################################################################
-def loop(wm, screen, font, turn):
-    for event in pygame.event.get():
-        if event.type==QUIT:
-            terminate()
-    drawMap(wm, screen, font, turn)
-    pygame.display.update()
-    #waitForPlayerToPressKey()
-    if random.randrange(4)==1:
-        dst=wm.findGrassland()
-        wm.demandTimber(dst, random.randrange(10))
-    if random.randrange(4)==1:
-        dst=wm.findGrassland()
-        wm.demandStone(dst, random.randrange(10))
-    src=wm.findMountain()
-    wm.addStone(src)
-    src=wm.findWoodland()
-    wm.addTimber(src)
-    wm.turn()
+    ############################################################################
+    def loop(self):
+        self.turn+=1
+        for event in pygame.event.get():
+            if event.type==QUIT:
+                terminate()
+        self.drawMap()
+        pygame.display.update()
+        #waitForPlayerToPressKey()
+        if random.randrange(4)==1:
+            dst=self.wm.findGrassland()
+            self.wm.demandTimber(dst, random.randrange(10))
+        if random.randrange(4)==1:
+            dst=self.wm.findGrassland()
+            self.wm.demandStone(dst, random.randrange(10))
+        src=self.wm.findMountain()
+        self.wm.addStone(src)
+        src=self.wm.findWoodland()
+        self.wm.addTimber(src)
+        self.wm.turn()
 
 ################################################################################
 def main():
-    pygame.init()
-    screen=pygame.display.set_mode((windowWidth,windowHeight),DOUBLEBUF)
-    wm=smap.Map(windowHeight/32,windowWidth/32)
-    font = pygame.font.SysFont(None, 24)
-    turn=0
+    g=Game()
     while True:
-        turn+=1
-        loop(wm, screen, font, turn)
-        if turn==100:
-            sys.exit(1)
+        g.loop()
 
 ################################################################################
 if __name__=="__main__":
-    import cProfile as profile
-    profile.run("main()")
+    #import cProfile as profile
+    #profile.run("main()")
     main()
 
 #EOF
