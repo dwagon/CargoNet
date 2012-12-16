@@ -15,7 +15,6 @@ class Cargo(object):
     def move(self, target):
         self.loc=target
 
-
 class Stone(Cargo):
     label='Stone'
 

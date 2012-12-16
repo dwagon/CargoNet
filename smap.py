@@ -3,100 +3,14 @@
 # $Id$
 # $HeadURL$
 
-import pygame
 import random
 import sys
 import os
 
 import cargo
-
-################################################################################
-class Node(object):
-    def __init__(self, x, y):
-        self.x=x
-        self.y=y
-        self.cargo=[]
-        self.demand={}
-        self.floodcount=0
-        self.floodval=-999
-        self.neighbours=set()
-        self.transport=True
-        self.image=None
-                
-    ############################################################################
-    def demandStone(self, count=1):
-        if 'Stone' not in self.demand:
-            self.demand['Stone']=0
-        self.demand['Stone']+=count
-
-    ############################################################################
-    def demandTimber(self, count=1):
-        if 'Timber' not in self.demand:
-            self.demand['Timber']=0
-        self.demand['Timber']+=count
-            
-    ############################################################################
-    def pickDirection(self):
-        """ Return all the nodes that have the highest floodval"""
-        maxf=-999
-        maxn=set()
-
-        for n in self.neighbours:
-            if n.floodval>maxf:
-                maxf=n.floodval
-        if maxf>-999:
-            for n in self.neighbours:
-                if n.floodval==maxf:
-                    maxn.add(n)
-        return maxn
-
-    ############################################################################
-    def __repr__(self):
-        return "<%s:%d,%d>" % (self.__class__.__name__,self.x,self.y)
-
-################################################################################
-class Grassland(Node):
-    def __init__(self, x, y):
-        Node.__init__(self, x, y)
-        self.transport=True
-        self.image=pygame.image.load('grassland.png')
-
-    ############################################################################
-    def short(self):
-        return 'G'
-
-################################################################################
-class Woodland(Node):
-    def __init__(self, x, y):
-        Node.__init__(self, x, y)
-        self.transport=False
-        self.image=pygame.image.load('woodland.png')
-
-    ############################################################################
-    def short(self):
-        return 'W'
-
-################################################################################
-class Water(Node):
-    def __init__(self, x, y):
-        Node.__init__(self, x, y)
-        self.transport=False
-        self.image=pygame.image.load('water.png')
-
-    ############################################################################
-    def short(self):
-        return '~'
-
-################################################################################
-class Mountain(Node):
-    def __init__(self, x, y):
-        Node.__init__(self, x, y)
-        self.transport=False
-        self.image=pygame.image.load('mountain.png')
-
-    ############################################################################
-    def short(self):
-        return '^'
+import carter
+import terrain
+import astar
 
 ################################################################################
 class Map(object):
@@ -105,9 +19,15 @@ class Map(object):
         self.width=width
         self.height=height
         self.cargo=[]
-        self.types=['Stone', 'Timber']
+        self.carters=[]
+        self.cargotypes=['Stone', 'Timber']
         self.generateMap()
         self.assignNeighbours()
+
+    ############################################################################
+    def addCarter(self, loc):
+        c=carter.Carter(loc, self)
+        self.carters.append(c)
 
     ############################################################################
     def addCargo(self, typ, loc, count=1):
@@ -139,15 +59,6 @@ class Map(object):
         loc.demandTimber(count)
 
     ############################################################################
-    def demand(self, typ, loc, count=1):
-        if typ=='Stone':
-            self.demandStone(loc, count)
-        elif typ=='Timber':
-            self.demandTimber(loc, count)
-        else:
-            Warning("Unknown Type in demand() %s" % typ)
-
-    ############################################################################
     def generateMap(self):
         altmap={}
         for x in range(self.width):
@@ -157,14 +68,14 @@ class Map(object):
         for x in range(self.width):
             for y in range(self.height):
                 if altmap[(x,y)]>70:
-                    self.nodes[(x,y)]=Mountain(x,y)
+                    self.nodes[(x,y)]=terrain.Mountain(x,y)
                 elif altmap[(x,y)]>60:
-                    self.nodes[(x,y)]=Woodland(x,y)
+                    self.nodes[(x,y)]=terrain.Woodland(x,y)
                 elif altmap[(x,y)]<35:
-                    self.nodes[(x,y)]=Water(x,y)
+                    self.nodes[(x,y)]=terrain.Water(x,y)
                 else:
-                    self.nodes[(x,y)]=Grassland(x,y)
-        
+                    self.nodes[(x,y)]=terrain.Grassland(x,y)
+
     ############################################################################
     def smoothMap(self, altmap):
         newmap={}
@@ -222,6 +133,75 @@ class Map(object):
         return ''.join(out)
 
     ############################################################################
+    def draw(self, screen, xsize, ysize):
+        for n in self.nodes.values():
+            n.draw(screen, xsize, ysize)
+        for c in self.carters:
+            c.draw(screen, xsize, ysize)
+
+    ############################################################################
+    def findDemand(self, loc, demandtype):
+        """ Find the closest demand for demandtype
+        """
+        destinations=[]
+        for n in self.nodes:
+            for d in n.demands:
+                if d.label==demandtype:
+                    destinations.append(n.loc)
+        return self.findRoute(loc, destinations)
+
+    ############################################################################
+    def findCargo(self, loc, cargotype=[]):
+        """ Find the closest cargo to loc
+        """
+        if not cargotype:
+            cargotype=self.cargotypes[:]
+        destinations=[n.loc for n in self.cargo if n.label in cargotype]
+        return self.findRoute(loc, destinations)
+
+    ############################################################################
+    def findRoute(self, src, destlist):
+        if not destlist:
+            Warning("No destinations specified")
+            return None,[]
+        if not src:
+            Warning("No sources specified")
+            return None,[]
+        minlength=999
+        minroute=None
+        dest=None
+        for d in destlist:
+            if d==src:
+                continue
+            m=self.getRouteMap(src=src, dest=d)
+            a=astar.AStar(m)
+            if len(a.path)<minlength:
+                minlength=len(a.path)
+                minroute=a.path[:]
+                dest=a.target
+        return dest, minroute
+
+    ############################################################################
+    def getRouteMap(self, src, dest):
+        """ Return a copy of a map suitable for route planning
+        """
+        routemap=""
+        for x in range(self.width):
+            s=""
+            for y in range(self.height):
+                if x==src.x and y==src.y:
+                    s+=astar.SOURCE
+                elif x==dest.x and y==dest.y:
+                    s+=astar.TARGET
+                else:
+                    if self.nodes[(x,y)].transport:
+                        s+=astar.UNBLOCKED
+                    else:
+                        s+=astar.BLOCKED
+            routemap+="%s\n" % s
+        return routemap
+
+    ############################################################################
     def getDest(self, loc):
         """ Return the location of the demand to satisfy for a cargo 
         at location 'loc'
@@ -239,19 +219,30 @@ class Map(object):
         # Flood out the demand
         for n in self.nodes.values():
             self.floodcount=0
-            if n.demand.get(typ,0):
-                self.flood(n,n.demand[typ])
+            totaldemand=0
+            for d in n.demands:
+                if d.label==typ:
+                    totaldemand+=d.required
+            if totaldemand:
+                self.flood(n,totaldemand)
 
     ############################################################################
     def satisfyDemand(self, node, typ):
+        """ Go through all the cargo in this node and see if any of it
+        satisfies its demands
+        """
         for c in self.cargo[:]:
             if c.label!=typ:
                 continue
-            if c.loc==node:
-                node.demand[typ]-=1
-                self.cargo.remove(c)
-            if node.demand[typ]<=0:      # Don't satisfy demand twice
-                break
+            if c.loc!=node:
+                continue
+            for d in node.demands[:]:
+                if d.label==typ:
+                    d.satisfy(1)
+                    if d.satisfied():
+                        node.demands.remove(d)
+                    self.cargo.remove(c)
+                    break
 
     ############################################################################
     def turn_satisfy_neighbours(self, typ):
@@ -259,9 +250,14 @@ class Map(object):
         for c in self.cargo:
             if c.label!=typ:
                 continue
-            nb=[x for x in c.loc.neighbours if x.demand.get(typ,0)]
-            if nb:
-                target=random.choice(nb)
+            # Which neighbours have a requirement that we can satisfy
+            possneigh=[]
+            for neigh in c.loc.neighbours:
+                for d in neigh.demands:
+                    if d.label==typ:
+                        possneigh.append(neigh)
+            if possneigh:
+                target=random.choice(possneigh)
                 c.move(target)
                 self.satisfyDemand(target, typ)
 
@@ -286,7 +282,9 @@ class Map(object):
         moves=0
         for c in self.cargo:
             c.turn()
-        for typ in self.types:
+        for c in self.carters:
+            c.turn()
+        for typ in self.cargotypes:
             self.turn_reset_flood()
             self.turn_calcdemand(typ)
             self.turn_satisfy_neighbours(typ)

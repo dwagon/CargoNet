@@ -17,6 +17,8 @@ class Game(object):
         pygame.init()
         self.screen=pygame.display.set_mode((windowWidth,windowHeight),DOUBLEBUF)
         self.wm=smap.Map(windowHeight/32,windowWidth/32)
+        loc=self.wm.findGrassland()
+        self.wm.addCarter(loc)
         self.font = pygame.font.SysFont(None, 24)
         self.turn=0
 
@@ -26,23 +28,8 @@ class Game(object):
         ysize=32
         self.screen.fill((0,0,0))
 
-        for n in self.wm.nodes.values():
-            r=pygame.Rect(n.x*xsize,n.y*ysize,xsize,ysize)
-            self.screen.blit(n.image,r)
-            if n.demand.get('Stone',0)!=0 or n.demand.get('Timber',0)!=0:
-                textobj=self.font.render("%s/%s" % (n.demand.get('Stone','-'), n.demand.get('Timber','-')),1,(255,0,0))
-                self.screen.blit(textobj,r)
-                continue
-            numcargo={'Stone':0, 'Timber':0}
-            for c in self.wm.cargo:
-                if c.loc==n:
-                    numcargo[c.label]+=1
-            if numcargo['Stone']!=0 or numcargo['Timber']!=0:
-                textobj=self.font.render("%d/%d" % (numcargo['Stone'], numcargo['Timber']),1,(0,0,255))
-                self.screen.blit(textobj,r)
-                continue
-
-        self.drawText("Turn %d - Cargo %d" % (self.turn, len(self.wm.cargo)), 0,0)
+        self.wm.draw(self.screen, xsize, ysize)
+        self.drawText("Turn %d" % self.turn, 0,0)
 
     ############################################################################
     def waitForPlayerToPressKey(self):
@@ -76,6 +63,11 @@ class Game(object):
         self.drawMap()
         pygame.display.update()
         #self.waitForPlayerToPressKey()
+        self.addResources()
+        self.wm.turn()
+
+    ############################################################################
+    def addResources(self):
         if random.randrange(4)==1:
             dst=self.wm.findGrassland()
             self.wm.demandTimber(dst, random.randrange(10))
@@ -86,7 +78,6 @@ class Game(object):
         self.wm.addStone(src)
         src=self.wm.findWoodland()
         self.wm.addTimber(src)
-        self.wm.turn()
 
 ################################################################################
 def main():
