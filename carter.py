@@ -11,17 +11,37 @@ class Carter(object):
 		self.image=pygame.image.load('carter.png')
 
 	def draw(self, screen, xsize, ysize):
-		rect=pygame.Rect(self.loc.x*xsize, self.loc.y*ysize, xsize, ysize)
-		screen.blit(self.image, rect)
+		screen.blit(self.image, self.loc.rect)
+		if self.path:
+			for n in self.path:
+				red=(255,0,0)
+				pygame.draw.circle(screen, red, (n[0]*xsize+xsize/2, n[1]*ysize+xsize/2), 2)
 
 	def turn(self):
-		if not self.cargo:
-			self.dest, self.path=self.world.findCargo(self.loc)
-		else:
+		if self.path:
+			print "self.path=%s - self.loc=%s" % (self.path, self.loc)
+			if self.path[-1][0]==self.loc.x and self.path[-1][1]==self.loc.y:
+				if self.cargo:
+					self.dropCargo()
+				else:
+					self.pickupCargo()
+			else:
+				self.moveAlongPath()
+		elif self.cargo:
 			self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
-		self.moveTowards(self.dest)
+		else:
+			self.dest, self.path=self.world.findCargo(self.loc)
 
-	def moveTowards(self, loc):
+	def moveAlongPath(self):
+		if self.path:
+			self.loc=self.world[self.path.pop(0)]
+
+	def dropCargo(self):
+		print "DropCargo"
+		pass
+
+	def pickupCargo(self):
+		print "pickupCargo"
 		pass
 
 #EOF

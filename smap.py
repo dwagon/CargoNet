@@ -1,7 +1,5 @@
 #!/opt/local/bin/python2.7
-#
-# $Id$
-# $HeadURL$
+# Map for cargonet
 
 import random
 import sys
@@ -9,8 +7,10 @@ import os
 
 import cargo
 import carter
+import demand
 import terrain
 import astar
+import source
 
 ################################################################################
 class Map(object):
@@ -20,43 +20,61 @@ class Map(object):
         self.height=height
         self.cargo=[]
         self.carters=[]
+        self.demands=[]
+        self.sources=[]
         self.cargotypes=['Stone', 'Timber']
         self.generateMap()
         self.assignNeighbours()
 
     ############################################################################
-    def addCarter(self, loc):
+    def addCarter(self, loc=None):
+        if not loc:
+            loc=self.findGrassland()
         c=carter.Carter(loc, self)
         self.carters.append(c)
 
     ############################################################################
-    def addCargo(self, typ, loc, count=1):
-        if typ=='Stone':
-            self.addStone(loc, count)
-        elif typ=='Timber':
-            self.addTimber(loc, count)
-        else:
-            Warning("Unknown Type in addCargo() %s" % typ)
+    def addQuarry(self, loc=None, count=1):
+        if not loc:
+            loc=self.findMountain()
+        s=source.Quarry(loc, self, count)
+        self.sources.append(s)
 
     ############################################################################
-    def addStone(self, loc, count=1):
-        for i in range(count):
-            c=cargo.Stone(self, loc)
-            self.cargo.append(c)
+    def addLumberCamp(self, loc=None, count=1):
+        if not loc:
+            loc=self.findWoodland()
+        s=source.LumberCamp(loc, self, count)
+        self.sources.append(s)
+        
+    ############################################################################
+    def addBuildingSite(self, loc=None, count=1):
+        if not loc:
+            loc=self.findGrassland()
+        d=demand.BuildingSite(loc, count)
+        self.demands.append(d)
 
     ############################################################################
-    def addTimber(self, loc, count=1):
-        for i in range(count):
-            c=cargo.Timber(self, loc)
-            self.cargo.append(c)
+    def addStoneMason(self, loc=None, count=1):
+        if not loc:
+            loc=self.findGrassland()
+        d=demand.StoneMason(loc, count)
+        self.demands.append(d)
 
     ############################################################################
-    def demandStone(self, loc, count=1):
-        loc.demandStone(count)
+    def addStone(self, loc):
+        self.cargo.append(cargo.Stone(self, loc))
 
     ############################################################################
-    def demandTimber(self, loc, count=1):
-        loc.demandTimber(count)
+    def addTimber(self, loc):
+        self.cargo.append(cargo.Timber(self, loc))
+
+    ############################################################################
+    def addCarpenter(self, loc=None, count=1):
+        if not loc:
+            loc=self.findGrassland()
+        d=demand.Carpenter(loc, count)
+        self.demands.append(d)
 
     ############################################################################
     def generateMap(self):
@@ -112,18 +130,6 @@ class Map(object):
         return self.nodes[key]
 
     ############################################################################
-    def flood(self, node, floodval):
-        self.floodcount+=1
-        node.floodval=floodval
-        todo=[]
-        for i in node.neighbours:
-            if i.floodval<floodval-1:
-                i.floodval=floodval-1
-                todo.append(i)
-        for i in todo:
-            self.flood(i,floodval-1)
-
-    ############################################################################
     def __repr__(self):
         out=[]
         for y in range(self.height):
@@ -136,6 +142,10 @@ class Map(object):
     def draw(self, screen, xsize, ysize):
         for n in self.nodes.values():
             n.draw(screen, xsize, ysize)
+        for d in self.demands:
+            d.draw(screen, xsize, ysize)
+        for s in self.sources:
+            s.draw(screen, xsize, ysize)
         for c in self.carters:
             c.draw(screen, xsize, ysize)
 
@@ -143,11 +153,11 @@ class Map(object):
     def findDemand(self, loc, demandtype):
         """ Find the closest demand for demandtype
         """
+        print "findDemand(loc=%s, demandtype=%s)" % (loc, demandtype)
         destinations=[]
-        for n in self.nodes:
-            for d in n.demands:
-                if d.label==demandtype:
-                    destinations.append(n.loc)
+        for d in self.demands:
+            if d.needs(demandtype):
+                destinations.append(d.loc)
         return self.findRoute(loc, destinations)
 
     ############################################################################
@@ -156,11 +166,13 @@ class Map(object):
         """
         if not cargotype:
             cargotype=self.cargotypes[:]
-        destinations=[n.loc for n in self.cargo if n.label in cargotype]
+        destinations=list(set([n.loc for n in self.cargo if n.label in cargotype]))
+        print "Looking at %s for %s" % (destinations, ",".join(cargotype))
         return self.findRoute(loc, destinations)
 
     ############################################################################
     def findRoute(self, src, destlist):
+        #print src
         if not destlist:
             Warning("No destinations specified")
             return None,[]
@@ -171,14 +183,17 @@ class Map(object):
         minroute=None
         dest=None
         for d in destlist:
-            if d==src:
+            if d==src:  # Cant route to own location
                 continue
             m=self.getRouteMap(src=src, dest=d)
             a=astar.AStar(m)
+            for i in a.step():  # Need to fix path so it doesn't do step wise
+                pass
             if len(a.path)<minlength:
                 minlength=len(a.path)
                 minroute=a.path[:]
                 dest=a.target
+        #print "dest=%s, minroute=%s" % (dest, minroute)
         return dest, minroute
 
     ############################################################################
@@ -186,9 +201,9 @@ class Map(object):
         """ Return a copy of a map suitable for route planning
         """
         routemap=""
-        for x in range(self.width):
+        for y in range(self.height):
             s=""
-            for y in range(self.height):
+            for x in range(self.width):
                 if x==src.x and y==src.y:
                     s+=astar.SOURCE
                 elif x==dest.x and y==dest.y:
@@ -202,94 +217,15 @@ class Map(object):
         return routemap
 
     ############################################################################
-    def getDest(self, loc):
-        """ Return the location of the demand to satisfy for a cargo 
-        at location 'loc'
-        """
-        return None
-
-    ############################################################################
-    def turn_reset_flood(self):
-        # Level the field
-        for n in self.nodes.values():
-            n.floodval=-999
-
-    ############################################################################
-    def turn_calcdemand(self, typ):
-        # Flood out the demand
-        for n in self.nodes.values():
-            self.floodcount=0
-            totaldemand=0
-            for d in n.demands:
-                if d.label==typ:
-                    totaldemand+=d.required
-            if totaldemand:
-                self.flood(n,totaldemand)
-
-    ############################################################################
-    def satisfyDemand(self, node, typ):
-        """ Go through all the cargo in this node and see if any of it
-        satisfies its demands
-        """
-        for c in self.cargo[:]:
-            if c.label!=typ:
-                continue
-            if c.loc!=node:
-                continue
-            for d in node.demands[:]:
-                if d.label==typ:
-                    d.satisfy(1)
-                    if d.satisfied():
-                        node.demands.remove(d)
-                    self.cargo.remove(c)
-                    break
-
-    ############################################################################
-    def turn_satisfy_neighbours(self, typ):
-        # If you are next to a demand satisfy one of them
-        for c in self.cargo:
-            if c.label!=typ:
-                continue
-            # Which neighbours have a requirement that we can satisfy
-            possneigh=[]
-            for neigh in c.loc.neighbours:
-                for d in neigh.demands:
-                    if d.label==typ:
-                        possneigh.append(neigh)
-            if possneigh:
-                target=random.choice(possneigh)
-                c.move(target)
-                self.satisfyDemand(target, typ)
-
-    ############################################################################
-    def turn_move_cargo(self, typ):
-        # For everything that has something move it towards the demand
-        moves=0
-        for c in self.cargo:
-            if c.label!=typ:
-                continue
-            possibleDirections=list(c.loc.pickDirection())
-            if not possibleDirections:
-                continue
-            target=random.choice(possibleDirections)     # If all options equal pick one at random
-            c.move(target)
-            moves+=1
-
-        return moves
-
-    ############################################################################
     def turn(self):
-        moves=0
+        for s in self.sources:
+            s.turn()
+        for d in self.demands:
+            d.turn()
         for c in self.cargo:
             c.turn()
         for c in self.carters:
             c.turn()
-        for typ in self.cargotypes:
-            self.turn_reset_flood()
-            self.turn_calcdemand(typ)
-            self.turn_satisfy_neighbours(typ)
-            moves+=self.turn_move_cargo(typ)
-        return moves
 
     ############################################################################
     def findGrassland(self):
@@ -313,21 +249,5 @@ class Map(object):
                     return n
         sys.stderr.write("Couldn't find any %s\n" % typ)
         return None
-
-################################################################################
-def main():
-    nl=Map(height=10,width=10)
-    nl[(2,2)].cargo=10
-    nl[(7,7)].demand=10
-    nl.flood(nl[(7,7)],10)
-    for y in range(10):
-        for x in range(10):
-            sys.stdout.write("%04d " % nl[(x,y)].floodval)
-        sys.stdout.write("\n")
-    print nl.floodcount
-
-################################################################################
-if __name__=="__main__":
-    main()
 
 #EOF

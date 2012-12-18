@@ -1,4 +1,5 @@
 # A class that creates demand for a resource
+import pygame
 
 ################################################################################
 class Demand(object):
@@ -12,15 +13,37 @@ class Demand(object):
 	def satisfied(self):
 		return self.required<=0
 
-	def draw(self, screen, rect):
+	def draw(self, screen, xsize, ysize):
+		screen.blit(self.image, self.loc.rect)
+
+	def needs(self, typ):
+		if typ in self.requires:
+			return True
+		else:
+			return False
+
+	def turn(self):
 		pass
 
 ################################################################################
-class demandsStone(Demand):
-	label='Stone'
+class StoneMason(Demand):
+	def __init__(self, loc, count=0):
+		Demand.__init__(self, loc, count)
+		self.requires=['Stone']
+		self.image=pygame.image.load('stone_mason.png')
 
 ################################################################################
-class demandsTimber(Demand):
-	label='Timber'
+class Carpenter(Demand):
+	def __init__(self, loc, count=0):
+		Demand.__init__(self, loc, count)
+		self.requires=['Timber']
+		self.image=pygame.image.load('carpenter.png')
+
+################################################################################
+class BuildingSite(Demand):
+	def __init__(self, loc, count=0):
+		Demand.__init__(self, loc, count)
+		self.requires=['Timber','Stone']
+		self.image=pygame.image.load('building_site.png')
 
 #EOF

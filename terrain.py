@@ -1,52 +1,22 @@
 import pygame
-import demand
 
 ################################################################################
 class Node(object):
     def __init__(self, x, y):
         self.x=x
         self.y=y
-        self.cargo=[]
-        self.demands=[]
         self.floodcount=0
         self.floodval=-999
         self.neighbours=set()
         self.transport=True
         self.image=None
+        self.rect=None
                 
     ############################################################################
     def draw(self, screen, xsize, ysize):
-        rect=pygame.Rect(self.x*xsize,self.y*ysize,xsize,ysize)
-        screen.blit(self.image,rect)
-        for d in self.demands:
-            d.draw(screen, rect)
-        for c in self.cargo:
-            c.draw(screen, rect)
-
-    ############################################################################
-    def demandStone(self, count=1):
-        d=demand.demandsStone(self, count)
-        self.demands.append(d)
-
-    ############################################################################
-    def demandTimber(self, count=1):
-        d=demand.demandsTimber(self, count)
-        self.demands.append(d)
-            
-    ############################################################################
-    def pickDirection(self):
-        """ Return all the nodes that have the highest floodval"""
-        maxf=-999
-        maxn=set()
-
-        for n in self.neighbours:
-            if n.floodval>maxf:
-                maxf=n.floodval
-        if maxf>-999:
-            for n in self.neighbours:
-                if n.floodval==maxf:
-                    maxn.add(n)
-        return maxn
+        if not self.rect:
+            self.rect=pygame.Rect(self.x*xsize,self.y*ysize,xsize,ysize)
+        screen.blit(self.image,self.rect)
 
     ############################################################################
     def __repr__(self):

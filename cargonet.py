@@ -17,10 +17,10 @@ class Game(object):
         pygame.init()
         self.screen=pygame.display.set_mode((windowWidth,windowHeight),DOUBLEBUF)
         self.wm=smap.Map(windowHeight/32,windowWidth/32)
-        loc=self.wm.findGrassland()
-        self.wm.addCarter(loc)
+        self.wm.addCarter()
         self.font = pygame.font.SysFont(None, 24)
         self.turn=0
+        self.initialResources()
 
     ############################################################################
     def drawMap(self):
@@ -62,22 +62,16 @@ class Game(object):
                 self.terminate()
         self.drawMap()
         pygame.display.update()
-        #self.waitForPlayerToPressKey()
-        self.addResources()
+        self.waitForPlayerToPressKey()
         self.wm.turn()
 
     ############################################################################
-    def addResources(self):
-        if random.randrange(4)==1:
-            dst=self.wm.findGrassland()
-            self.wm.demandTimber(dst, random.randrange(10))
-        if random.randrange(4)==1:
-            dst=self.wm.findGrassland()
-            self.wm.demandStone(dst, random.randrange(10))
-        src=self.wm.findMountain()
-        self.wm.addStone(src)
-        src=self.wm.findWoodland()
-        self.wm.addTimber(src)
+    def initialResources(self):
+        self.wm.addStoneMason()
+        self.wm.addCarpenter()
+        self.wm.addBuildingSite()
+        self.wm.addLumberCamp()
+        self.wm.addQuarry()
 
 ################################################################################
 def main():

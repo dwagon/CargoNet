@@ -4,16 +4,11 @@
 
 class Cargo(object):
     def __init__(self, smap, loc=None):
-        self.dest=None
         self.smap=smap
         self.loc=loc
 
     def turn(self):
-        if not self.dest:
-            self.dest=self.smap.getDest(self.loc)
-
-    def move(self, target):
-        self.loc=target
+        pass
 
 class Stone(Cargo):
     label='Stone'
