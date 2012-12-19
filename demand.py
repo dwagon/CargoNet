@@ -30,20 +30,20 @@ class StoneMason(Demand):
 	def __init__(self, loc, count=0):
 		Demand.__init__(self, loc, count)
 		self.requires=['Stone']
-		self.image=pygame.image.load('stone_mason.png')
+		self.image=pygame.image.load('images/stone_mason.png')
 
 ################################################################################
 class Carpenter(Demand):
 	def __init__(self, loc, count=0):
 		Demand.__init__(self, loc, count)
 		self.requires=['Timber']
-		self.image=pygame.image.load('carpenter.png')
+		self.image=pygame.image.load('images/carpenter.png')
 
 ################################################################################
 class BuildingSite(Demand):
 	def __init__(self, loc, count=0):
 		Demand.__init__(self, loc, count)
 		self.requires=['Timber','Stone']
-		self.image=pygame.image.load('building_site.png')
+		self.image=pygame.image.load('images/building_site.png')
 
 #EOF

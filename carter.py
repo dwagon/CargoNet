@@ -8,7 +8,7 @@ class Carter(object):
 		self.dest=None
 		self.world=world
 		self.path=[]
-		self.image=pygame.image.load('carter.png')
+		self.image=pygame.image.load('images/carter.png')
 
 	def draw(self, screen, xsize, ysize):
 		screen.blit(self.image, self.loc.rect)

@@ -14,7 +14,7 @@ class Source(object):
 class Quarry(Source):
 	def __init__(self, loc, world, size):
 		Source.__init__(self, loc, world, size)
-		self.image=pygame.image.load('quarry.png')
+		self.image=pygame.image.load('images/quarry.png')
 
 	def turn(self):
 		self.loc.addCargo('stone', self.size)
@@ -22,7 +22,7 @@ class Quarry(Source):
 class LumberCamp(Source):
 	def __init__(self, loc, world, size):
 		Source.__init__(self, loc, world, size)
-		self.image=pygame.image.load('lumbercamp.png')
+		self.image=pygame.image.load('images/lumbercamp.png')
 
 	def turn(self):
 		self.loc.addCargo('timber', self.size)

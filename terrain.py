@@ -73,7 +73,7 @@ class Grassland(Node):
     def __init__(self, x, y):
         Node.__init__(self, x, y)
         self.transport=True
-        self.image=pygame.image.load('grassland.png')
+        self.image=pygame.image.load('images/grassland.png')
 
     ############################################################################
     def short(self):
@@ -84,7 +84,7 @@ class Woodland(Node):
     def __init__(self, x, y):
         Node.__init__(self, x, y)
         self.transport=False
-        self.image=pygame.image.load('woodland.png')
+        self.image=pygame.image.load('images/woodland.png')
 
     ############################################################################
     def short(self):
@@ -95,7 +95,7 @@ class Water(Node):
     def __init__(self, x, y):
         Node.__init__(self, x, y)
         self.transport=False
-        self.image=pygame.image.load('water.png')
+        self.image=pygame.image.load('images/water.png')
 
     ############################################################################
     def short(self):
@@ -106,7 +106,7 @@ class Mountain(Node):
     def __init__(self, x, y):
         Node.__init__(self, x, y)
         self.transport=False
-        self.image=pygame.image.load('mountain.png')
+        self.image=pygame.image.load('images/mountain.png')
 
     ############################################################################
     def short(self):
