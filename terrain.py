@@ -1,17 +1,63 @@
 import pygame
 
+import cargo
+
 ################################################################################
 class Node(object):
     def __init__(self, x, y):
         self.x=x
         self.y=y
-        self.floodcount=0
-        self.floodval=-999
         self.neighbours=set()
         self.transport=True
+        self.source=None    # Reference to a source object
+        self.demand=None    # Reference to a demand object
+        self.cargo={}
         self.image=None
         self.rect=None
                 
+    ############################################################################
+    def getCargo(self, typ=None, maxsize=9999):
+        if not typ:
+            st=self.cargo.get('stone',0)
+            ti=self.cargo.get('timber',0)
+            if st>ti:
+                typ='stone'
+            else:
+                typ='timber'
+        if typ=='stone':
+            if self.cargo.get('stone',0)==0:
+                return None
+            c=cargo.Stone()
+            c.amount=min(self.cargo['stone'], maxsize)
+        if typ=='timber':
+            if self.cargo.get('timber',0)==0:
+                return None
+            c=cargo.Timber()
+            c.amount=min(self.cargo['timber'], maxsize)
+        return c
+
+    ############################################################################
+    def dropCargo(self, cargo):
+        if cargo.typ=='stone':
+            self.addCargo('stone', cargo.amount)
+        elif cargo.typ=='timber':
+            self.addCargo('timber', cargo.amount)
+        else:
+            print "Unknown cargo %s" % cargo
+
+    ############################################################################
+    def hasCargo(self, typ):
+        return self.cargo.get(typ,0)
+
+    ############################################################################
+    def addCargo(self, typ, amount=1):
+        self.cargo[typ]=self.cargo.get(typ,0)+amount
+        print "%s %s=%d" % (self, typ, self.cargo[typ])
+
+    ############################################################################
+    def loc(self):
+        return self.x, self.y
+
     ############################################################################
     def draw(self, screen, xsize, ysize):
         if not self.rect:

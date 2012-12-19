@@ -19,29 +19,22 @@ class Carter(object):
 
 	def turn(self):
 		if self.path:
-			print "self.path=%s - self.loc=%s" % (self.path, self.loc)
-			if self.path[-1][0]==self.loc.x and self.path[-1][1]==self.loc.y:
-				if self.cargo:
-					self.dropCargo()
-				else:
-					self.pickupCargo()
+			self.moveAlongPath()
+		if not self.path:
+			if self.cargo:
+				self.dropCargo()
+				self.dest, self.path=self.world.findCargo(self.loc)
 			else:
-				self.moveAlongPath()
-		elif self.cargo:
-			self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
-		else:
-			self.dest, self.path=self.world.findCargo(self.loc)
+				self.pickupCargo()
+				self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
 
 	def moveAlongPath(self):
-		if self.path:
-			self.loc=self.world[self.path.pop(0)]
+		self.loc=self.world[self.path.pop(0)]
 
 	def dropCargo(self):
-		print "DropCargo"
-		pass
+		self.loc.dropCargo(self.cargo)
 
 	def pickupCargo(self):
-		print "pickupCargo"
-		pass
+		self.cargo=self.loc.getCargo()
 
 #EOF

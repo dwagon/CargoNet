@@ -3,17 +3,20 @@
 # Objects to move around in CargoNet
 
 class Cargo(object):
-    def __init__(self, smap, loc=None):
-        self.smap=smap
-        self.loc=loc
+    def __init__(self):
+        self.typ=None
+        self.amount=0
 
     def turn(self):
         pass
 
 class Stone(Cargo):
-    label='Stone'
-
-class Timber(Cargo):
-    label='Timber'
+    def __init__(self):
+        Cargo.__init__(self)
+        self.typ='stone'
 	
+class Timber(Cargo):
+    def __init__(self):
+        Cargo.__init__(self)
+        self.typ='timber'
 #EOF

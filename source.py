@@ -11,17 +11,13 @@ class Source(object):
 	def draw(self, screen, xsize, ysize):
 		screen.blit(self.image, self.loc.rect)
 
-	def turn(self):
-		pass
-
 class Quarry(Source):
 	def __init__(self, loc, world, size):
 		Source.__init__(self, loc, world, size)
 		self.image=pygame.image.load('quarry.png')
 
 	def turn(self):
-		for i in range(self.size):
-			self.world.addStone(self.loc)
+		self.loc.addCargo('stone', self.size)
 
 class LumberCamp(Source):
 	def __init__(self, loc, world, size):
@@ -29,7 +25,6 @@ class LumberCamp(Source):
 		self.image=pygame.image.load('lumbercamp.png')
 
 	def turn(self):
-		for i in range(self.size):
-			self.world.addTimber(self.loc)
+		self.loc.addCargo('timber', self.size)
 
 #EOF
