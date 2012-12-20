@@ -10,6 +10,9 @@ class Cargo(object):
     def turn(self):
         pass
 
+    def __repr__(self):
+        return "%s x %d" % (self.typ, self.amount)
+
 class Stone(Cargo):
     def __init__(self):
         Cargo.__init__(self)

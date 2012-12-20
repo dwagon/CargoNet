@@ -169,6 +169,7 @@ class Map(object):
         """
         if not cargotype:
             cargotype=self.cargotypes[:]
+        print "findCargo(loc=%s, cargotype=%s)" % (loc, cargotype)
         destinations=set()
         for ct in cargotype:
             s=set([n for n in self.nodes.values() if n.hasCargo(ct)])
@@ -179,10 +180,10 @@ class Map(object):
     ############################################################################
     def findRoute(self, src, destlist):
         if not destlist:
-            Warning("No destinations specified")
+            print "No destinations specified"
             return None,[]
         if not src:
-            Warning("No sources specified")
+            print "No sources specified"
             return None,[]
         minlength=999
         minroute=None

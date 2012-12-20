@@ -7,6 +7,7 @@ class Source(object):
 		self.world=world
 		self.size=size
 		self.image=None
+		self.turn()
 
 	def draw(self, screen, xsize, ysize):
 		screen.blit(self.image, self.loc.rect)

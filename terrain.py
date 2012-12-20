@@ -17,9 +17,11 @@ class Node(object):
                 
     ############################################################################
     def getCargo(self, typ=None, maxsize=9999):
+        print "%s.getCarg()" % self
         if not typ:
             st=self.cargo.get('stone',0)
             ti=self.cargo.get('timber',0)
+            print "Stone=%d Timber=%d" % (st,ti)
             if st>ti:
                 typ='stone'
             else:
@@ -47,12 +49,14 @@ class Node(object):
 
     ############################################################################
     def hasCargo(self, typ):
+        if self.cargo.get(typ,0):
+            print "hasCargo(typ=%s)" % typ
         return self.cargo.get(typ,0)
 
     ############################################################################
     def addCargo(self, typ, amount=1):
         self.cargo[typ]=self.cargo.get(typ,0)+amount
-        print "%s %s=%d" % (self, typ, self.cargo[typ])
+        #print "%s %s=%d" % (self, typ, self.cargo[typ])
 
     ############################################################################
     def loc(self):

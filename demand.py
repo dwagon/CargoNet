@@ -17,6 +17,8 @@ class Demand(object):
 		screen.blit(self.image, self.loc.rect)
 
 	def needs(self, typ):
+		if not typ:
+			return True
 		if typ in self.requires:
 			return True
 		else:
@@ -29,21 +31,21 @@ class Demand(object):
 class StoneMason(Demand):
 	def __init__(self, loc, count=0):
 		Demand.__init__(self, loc, count)
-		self.requires=['Stone']
+		self.requires=['stone']
 		self.image=pygame.image.load('images/stone_mason.png')
 
 ################################################################################
 class Carpenter(Demand):
 	def __init__(self, loc, count=0):
 		Demand.__init__(self, loc, count)
-		self.requires=['Timber']
+		self.requires=['timber']
 		self.image=pygame.image.load('images/carpenter.png')
 
 ################################################################################
 class BuildingSite(Demand):
 	def __init__(self, loc, count=0):
 		Demand.__init__(self, loc, count)
-		self.requires=['Timber','Stone']
+		self.requires=['timber','stone']
 		self.image=pygame.image.load('images/building_site.png')
 
 #EOF
