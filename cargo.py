@@ -2,24 +2,33 @@
 #
 # Objects to move around in CargoNet
 
+###############################################################################
 class Cargo(object):
-    def __init__(self):
-        self.typ=None
-        self.amount=0
+    def __init__(self, size=0):
+        self.name=None
+        self.amount=size
 
+    ###########################################################################
     def turn(self):
         pass
 
-    def __repr__(self):
-        return "%s x %d" % (self.typ, self.amount)
+    ###########################################################################
+    def add(self, amt):
+        self.amount+=amt
 
+    ###########################################################################
+    def __repr__(self):
+        return "%s x %d" % (self.name, self.amount)
+
+###############################################################################
 class Stone(Cargo):
-    def __init__(self):
-        Cargo.__init__(self)
-        self.typ='stone'
+    def __init__(self, size=0):
+        Cargo.__init__(self, size)
+        self.name='stone'
 	
+###############################################################################
 class Timber(Cargo):
-    def __init__(self):
-        Cargo.__init__(self)
-        self.typ='timber'
+    def __init__(self, size=0):
+        Cargo.__init__(self, size)
+        self.name='timber'
 #EOF

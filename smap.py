@@ -6,10 +6,10 @@ import sys
 import os
 
 import carter
-import demand
 import terrain
 import astar
-import source
+import building
+import cargo
 
 ################################################################################
 class Map(object):
@@ -18,9 +18,8 @@ class Map(object):
         self.width=width
         self.height=height
         self.carters=[]
-        self.demands=[]
-        self.sources=[]
-        self.cargotypes=['stone', 'timber']
+        self.buildings=[]
+        self.cargotypes=[cargo.Stone, cargo.Timber]
         self.generateMap()
         self.assignNeighbours()
 
@@ -35,49 +34,41 @@ class Map(object):
     def addQuarry(self, loc=None, count=1):
         if not loc:
             loc=self.findMountain()
-        s=source.Quarry(loc, self, count)
-        loc.source=s
-        self.sources.append(s)
+        s=building.Quarry(loc, self, count)
+        loc.building=s
+        self.buildings.append(s)
 
     ############################################################################
     def addLumberCamp(self, loc=None, count=1):
         if not loc:
             loc=self.findWoodland()
-        s=source.LumberCamp(loc, self, count)
-        loc.source=s
-        self.sources.append(s)
+        s=building.LumberCamp(loc, self, count)
+        loc.building=s
+        self.buildings.append(s)
         
     ############################################################################
     def addBuildingSite(self, loc=None, count=1):
         if not loc:
             loc=self.findGrassland()
-        d=demand.BuildingSite(loc, count)
-        loc.demand=d
-        self.demands.append(d)
+        d=building.BuildingSite(loc, count)
+        loc.building=d
+        self.buildings.append(d)
 
     ############################################################################
     def addStoneMason(self, loc=None, count=1):
         if not loc:
             loc=self.findGrassland()
-        d=demand.StoneMason(loc, count)
-        loc.demand=d
-        self.demands.append(d)
-
-    ############################################################################
-    def addStone(self, loc):
-        self.loc.addCargo('stone')
-
-    ############################################################################
-    def addTimber(self, loc):
-        self.loc.addCargo('timber')
+        d=building.StoneMason(loc, count)
+        loc.building=d
+        self.buildings.append(d)
 
     ############################################################################
     def addCarpenter(self, loc=None, count=1):
         if not loc:
             loc=self.findGrassland()
-        d=demand.Carpenter(loc, count)
-        loc.demand=d
-        self.demands.append(d)
+        d=building.Carpenter(loc, count)
+        loc.building=d
+        self.buildings.append(d)
 
     ############################################################################
     def generateMap(self):
@@ -145,10 +136,8 @@ class Map(object):
     def draw(self, screen, xsize, ysize):
         for n in self.nodes.values():
             n.draw(screen, xsize, ysize)
-        for d in self.demands:
-            d.draw(screen, xsize, ysize)
-        for s in self.sources:
-            s.draw(screen, xsize, ysize)
+        for b in self.buildings:
+            b.draw(screen, xsize, ysize)
         for c in self.carters:
             c.draw(screen, xsize, ysize)
 
@@ -156,11 +145,10 @@ class Map(object):
     def findDemand(self, loc, demandtype):
         """ Find the closest demand for demandtype
         """
-        print "findDemand(loc=%s, demandtype=%s)" % (loc, demandtype)
         destinations=[]
-        for d in self.demands:
-            if d.needs(demandtype):
-                destinations.append(d.loc)
+        for b in self.buildings:
+            if b.needs(demandtype):
+                destinations.append(b.loc)
         return self.findRoute(loc, destinations)
 
     ############################################################################
@@ -169,12 +157,10 @@ class Map(object):
         """
         if not cargotype:
             cargotype=self.cargotypes[:]
-        print "findCargo(loc=%s, cargotype=%s)" % (loc, cargotype)
         destinations=set()
         for ct in cargotype:
             s=set([n for n in self.nodes.values() if n.hasCargo(ct)])
             destinations=destinations.union(s)
-        print "Looking at %s for %s" % (destinations, ",".join(cargotype))
         return self.findRoute(loc, list(destinations))
 
     ############################################################################
@@ -195,11 +181,12 @@ class Map(object):
             a=astar.AStar(m)
             for i in a.step():  # Need to fix path so it doesn't do step wise
                 pass
-            if len(a.path)<minlength:
+            if len(a.path) and len(a.path)<minlength:
                 minlength=len(a.path)
                 minroute=a.path[:]
                 dest=a.target
         # Don't include the start point
+        print "Dest=%s minroute=%s" % (dest, minroute)
         return dest, minroute[1:]
 
     ############################################################################
@@ -224,10 +211,10 @@ class Map(object):
 
     ############################################################################
     def turn(self):
-        for s in self.sources:
-            s.turn()
-        for d in self.demands:
-            d.turn()
+        for n in self.nodes.values():
+            n.turn()
+        for b in self.buildings:
+            b.turn()
         for c in self.carters:
             c.turn()
 

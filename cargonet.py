@@ -17,10 +17,10 @@ class Game(object):
         pygame.init()
         self.screen=pygame.display.set_mode((windowWidth,windowHeight),DOUBLEBUF)
         self.wm=smap.Map(windowHeight/32,windowWidth/32)
-        self.wm.addCarter()
         self.font = pygame.font.SysFont(None, 24)
         self.turn=0
         self.initialResources()
+        self.wm.addCarter()
 
     ############################################################################
     def drawMap(self):

@@ -1,4 +1,5 @@
 import pygame
+import random
 
 import cargo
 
@@ -9,54 +10,66 @@ class Node(object):
         self.y=y
         self.neighbours=set()
         self.transport=True
-        self.source=None    # Reference to a source object
-        self.demand=None    # Reference to a demand object
-        self.cargo={}
+        self.building=None    # Reference to a building object
+        self.cargo=[]
         self.image=None
         self.rect=None
                 
     ############################################################################
+    def turn(self):
+        if not self.cargo:
+            return
+        newcargo={}
+        for c in self.cargo:
+            if c.__class__.__name__ not in newcargo:
+                newcargo[c.__class__.__name__]=c.__class__()
+            newcargo[c.__class__.__name__].add(c.amount)
+        self.cargo=newcargo.values()
+
+    ############################################################################
     def getCargo(self, typ=None, maxsize=9999):
-        print "%s.getCarg()" % self
+        if self.building:
+            c=self.building.getCargo(typ, maxsize)
+            if c:
+                return c
         if not typ:
-            st=self.cargo.get('stone',0)
-            ti=self.cargo.get('timber',0)
-            print "Stone=%d Timber=%d" % (st,ti)
-            if st>ti:
-                typ='stone'
-            else:
-                typ='timber'
-        if typ=='stone':
-            if self.cargo.get('stone',0)==0:
-                return None
-            c=cargo.Stone()
-            c.amount=min(self.cargo['stone'], maxsize)
-        if typ=='timber':
-            if self.cargo.get('timber',0)==0:
-                return None
-            c=cargo.Timber()
-            c.amount=min(self.cargo['timber'], maxsize)
-        return c
+            typ=random.choice(self.cargo).__class__
+        for c in self.cargo[:]:
+            if isinstance(c, typ):
+                if c.amount<=maxsize:
+                    self.cargo.remove(c)
+                    return c
+                else:
+                    nc=typ()
+                    nc.amount=maxsize
+                    c.amount-=maxsize
+                    return nc
+        return None
+
+    ############################################################################
+    def needs(self, cargo):
+        if self.building:
+            return self.building.needs(cargo)
+        return None
 
     ############################################################################
     def dropCargo(self, cargo):
-        if cargo.typ=='stone':
-            self.addCargo('stone', cargo.amount)
-        elif cargo.typ=='timber':
-            self.addCargo('timber', cargo.amount)
-        else:
-            print "Unknown cargo %s" % cargo
+        if self.building:
+            c=self.building.dropCargo(cargo)
+            if c:
+                return c
+        self.cargo.append(cargo)
 
     ############################################################################
     def hasCargo(self, typ):
-        if self.cargo.get(typ,0):
-            print "hasCargo(typ=%s)" % typ
-        return self.cargo.get(typ,0)
+        for c in self.cargo:
+            if isinstance(c,typ):
+                return True
+        return False
 
     ############################################################################
-    def addCargo(self, typ, amount=1):
-        self.cargo[typ]=self.cargo.get(typ,0)+amount
-        #print "%s %s=%d" % (self, typ, self.cargo[typ])
+    def addCargo(self, carg):
+        self.cargo.append(carg)
 
     ############################################################################
     def loc(self):
