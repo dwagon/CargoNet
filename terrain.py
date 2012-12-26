@@ -1,10 +1,13 @@
+# Class definitions for terrain
 import pygame
 import random
 
 import cargo
 
 ################################################################################
-class Node(object):
+################################################################################
+################################################################################
+class MapNode(object):
     def __init__(self, x, y):
         self.x=x
         self.y=y
@@ -91,9 +94,11 @@ class Node(object):
         return "<%s:%d,%d>" % (self.__class__.__name__,self.x,self.y)
 
 ################################################################################
-class Grassland(Node):
+################################################################################
+################################################################################
+class Grassland(MapNode):
     def __init__(self, x, y):
-        Node.__init__(self, x, y)
+        MapNode.__init__(self, x, y)
         self.transport=True
         self.image=pygame.image.load('images/grassland.png')
 
@@ -102,9 +107,11 @@ class Grassland(Node):
         return 'G'
 
 ################################################################################
-class Woodland(Node):
+################################################################################
+################################################################################
+class Woodland(MapNode):
     def __init__(self, x, y):
-        Node.__init__(self, x, y)
+        MapNode.__init__(self, x, y)
         self.transport=False
         self.image=pygame.image.load('images/woodland.png')
 
@@ -113,9 +120,11 @@ class Woodland(Node):
         return 'W'
 
 ################################################################################
-class Water(Node):
+################################################################################
+################################################################################
+class Water(MapNode):
     def __init__(self, x, y):
-        Node.__init__(self, x, y)
+        MapNode.__init__(self, x, y)
         self.transport=False
         self.image=pygame.image.load('images/water.png')
 
@@ -124,12 +133,16 @@ class Water(Node):
         return '~'
 
 ################################################################################
-class Mountain(Node):
+################################################################################
+################################################################################
+class Mountain(MapNode):
     def __init__(self, x, y):
-        Node.__init__(self, x, y)
+        MapNode.__init__(self, x, y)
         self.transport=False
         self.image=pygame.image.load('images/mountain.png')
 
     ############################################################################
     def short(self):
         return '^'
+
+#EOF
