@@ -214,8 +214,10 @@ class Map(object):
     def turn(self):
         for n in self.nodes.values():
             n.turn()
-        for b in self.buildings:
+        for b in self.buildings[:]:
             b.turn()
+            if b.terminate:
+                self.buildings.remove(b)
         for c in self.carters:
             c.turn()
 

@@ -45,9 +45,8 @@ class Node(object):
                     self.cargo.remove(c)
                     return c
                 else:
-                    nc=typ()
-                    nc.amount=maxsize
-                    c.amount-=maxsize
+                    nc=typ(maxsize)
+                    c.deplete(maxsize)
                     return nc
         return None
 
@@ -80,10 +79,6 @@ class Node(object):
     def addCargo(self, carg):
         self.cargo.append(carg)
         self.consolidateCargo()
-
-    ############################################################################
-    def loc(self):
-        return self.x, self.y
 
     ############################################################################
     def draw(self, screen, xsize, ysize):

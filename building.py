@@ -15,6 +15,7 @@ class Building(object):
 		self.image=None
 		self.requires=[]
 		self.provides=[]
+		self.terminate=False
 
 	############################################################################
 	def draw(self, screen, xsize, ysize):
@@ -70,12 +71,13 @@ class Quarry(Building):
 			if isinstance(c,cargo.Stone):
 				if c.amount>=5:
 					return
-		make=min(self.size, self.capacity)
-		self.capacity-=make
+		amt=min(self.size, self.capacity)
+		self.capacity-=amt
 		if self.capacity<=0:
 			self.provides=[]
+			self.terminate=True
 		else:
-			self.loc.addCargo(cargo.Stone(make))
+			self.loc.addCargo(cargo.Stone(amt))
 
 ################################################################################
 ################################################################################
@@ -98,12 +100,13 @@ class LumberCamp(Building):
 			if isinstance(c,cargo.Wood):
 				if c.amount>=5:
 					return
-		make=min(self.size, self.capacity)
-		self.capacity-=make
+		amt=min(self.size, self.capacity)
+		self.capacity-=amt
 		if self.capacity<=0:
 			self.provides=[]
+			self.terminate=True
 		else:
-			self.loc.addCargo(cargo.Wood(make))
+			self.loc.addCargo(cargo.Wood(amt))
 
 ################################################################################
 ################################################################################
