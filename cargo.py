@@ -13,6 +13,11 @@ class Cargo(object):
         pass
 
     ###########################################################################
+    def deplete(self, amt):
+        self.amount-=amt
+        self.amount=max(0,self.amount)
+        
+    ###########################################################################
     def add(self, amt):
         self.amount+=amt
 
@@ -31,4 +36,10 @@ class Timber(Cargo):
     def __init__(self, size=0):
         Cargo.__init__(self, size)
         self.name='timber'
+
+###############################################################
+class Wood(Cargo):
+    def __init__(self, size=0):
+        Cargo.__init__(self, size)
+        self.name='wood'
 #EOF

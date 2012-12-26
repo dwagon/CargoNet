@@ -21,6 +21,7 @@ class Game(object):
         self.turn=0
         self.initialResources()
         self.wm.addCarter()
+        #self.wm.addCarter()
 
     ############################################################################
     def drawMap(self):

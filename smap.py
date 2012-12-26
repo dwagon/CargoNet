@@ -19,7 +19,6 @@ class Map(object):
         self.height=height
         self.carters=[]
         self.buildings=[]
-        self.cargotypes=[cargo.Stone, cargo.Timber]
         self.generateMap()
         self.assignNeighbours()
 
@@ -155,12 +154,13 @@ class Map(object):
     def findCargo(self, loc, cargotype=[]):
         """ Find the closest cargo to loc
         """
-        if not cargotype:
-            cargotype=self.cargotypes[:]
         destinations=set()
+        if not cargotype:
+            cargotype=[None]
         for ct in cargotype:
             s=set([n for n in self.nodes.values() if n.hasCargo(ct)])
             destinations=destinations.union(s)
+        print "findCargo() destinations=%s" % destinations
         return self.findRoute(loc, list(destinations))
 
     ############################################################################
@@ -185,8 +185,9 @@ class Map(object):
                 minlength=len(a.path)
                 minroute=a.path[:]
                 dest=a.target
+        if not dest:
+            return None,[]
         # Don't include the start point
-        print "Dest=%s minroute=%s" % (dest, minroute)
         return dest, minroute[1:]
 
     ############################################################################

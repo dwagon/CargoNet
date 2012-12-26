@@ -17,13 +17,18 @@ class Node(object):
                 
     ############################################################################
     def turn(self):
+        self.consolidateCargo()
+
+    ############################################################################
+    def consolidateCargo(self):
         if not self.cargo:
             return
         newcargo={}
         for c in self.cargo:
-            if c.__class__.__name__ not in newcargo:
-                newcargo[c.__class__.__name__]=c.__class__()
-            newcargo[c.__class__.__name__].add(c.amount)
+            if c.amount>0:
+                if c.__class__ not in newcargo:
+                    newcargo[c.__class__]=c.__class__()
+                newcargo[c.__class__].add(c.amount)
         self.cargo=newcargo.values()
 
     ############################################################################
@@ -59,17 +64,22 @@ class Node(object):
             if c:
                 return c
         self.cargo.append(cargo)
+        self.consolidateCargo()
 
     ############################################################################
     def hasCargo(self, typ):
         for c in self.cargo:
-            if isinstance(c,typ):
+            if typ:
+                if isinstance(c,typ):
+                    return True
+            else:
                 return True
         return False
 
     ############################################################################
     def addCargo(self, carg):
         self.cargo.append(carg)
+        self.consolidateCargo()
 
     ############################################################################
     def loc(self):
