@@ -1,4 +1,3 @@
-#!/opt/local/bin/python2.7
 # Map for cargonet
 
 import random
@@ -11,6 +10,8 @@ import astar
 import building
 import cargo
 
+################################################################################
+################################################################################
 ################################################################################
 class Map(object):
     def __init__(self, height=5, width=5):
@@ -33,6 +34,8 @@ class Map(object):
     def addQuarry(self, loc=None, count=1):
         if not loc:
             loc=self.findMountain()
+            while loc.building:
+                loc=self.findMountain()
         s=building.Quarry(loc, self, count)
         loc.building=s
         self.buildings.append(s)
@@ -41,6 +44,8 @@ class Map(object):
     def addLumberCamp(self, loc=None, count=1):
         if not loc:
             loc=self.findWoodland()
+            while loc.building:
+                loc=self.findWoodland()
         s=building.LumberCamp(loc, self, count)
         loc.building=s
         self.buildings.append(s)
@@ -49,7 +54,18 @@ class Map(object):
     def addBuildingSite(self, loc=None, count=1):
         if not loc:
             loc=self.findGrassland()
-        d=building.BuildingSite(loc, count)
+            while loc.building:
+                loc=self.findGrassland()
+        d=building.BuildingSite(loc, self, count)
+        loc.building=d
+        self.buildings.append(d)
+
+    ############################################################################
+    def addBuilding(self, build, loc=None, count=1):
+        print "addBuilding(build=%s, loc=%s)" % (build, loc)
+        if not loc:
+            loc=self.findGrassland()
+        d=build(loc, self, count)
         loc.building=d
         self.buildings.append(d)
 
@@ -57,7 +73,9 @@ class Map(object):
     def addStoneMason(self, loc=None, count=1):
         if not loc:
             loc=self.findGrassland()
-        d=building.StoneMason(loc, count)
+            while loc.building:
+                loc=self.findGrassland()
+        d=building.StoneMason(loc, self, count)
         loc.building=d
         self.buildings.append(d)
 
@@ -65,7 +83,9 @@ class Map(object):
     def addCarpenter(self, loc=None, count=1):
         if not loc:
             loc=self.findGrassland()
-        d=building.Carpenter(loc, count)
+            while loc.building:
+                loc=self.findGrassland()
+        d=building.Carpenter(loc, self, count)
         loc.building=d
         self.buildings.append(d)
 
@@ -141,6 +161,15 @@ class Map(object):
             c.draw(screen, xsize, ysize)
 
     ############################################################################
+    def isDemand(self, cargotype):
+        """ Is there demand for this type of cargo?
+        """
+        for b in self.buildings:
+            if b.needs(cargotype):
+                return True
+        return False
+
+    ############################################################################
     def findDemand(self, loc, demandtype):
         """ Find the closest demand for demandtype
         """
@@ -148,7 +177,21 @@ class Map(object):
         for b in self.buildings:
             if b.needs(demandtype):
                 destinations.append(b.loc)
+        print "findDemand() destinations=%s" % destinations
         return self.findRoute(loc, destinations)
+
+    ############################################################################
+    def getAllCargoTypes(self):
+        if hasattr(self, 'allcargotypes'):
+            return self.allcargotypes
+        self.allcargotypes=[]
+        for d in dir(cargo):
+            if d[0]=='_':
+                continue
+            c=eval("cargo.%s" % d)
+            if issubclass(c, cargo.Cargo) and c!=cargo.Cargo:
+                self.allcargotypes.append(c)
+        return self.allcargotypes
 
     ############################################################################
     def findCargo(self, loc, cargotype=[]):
@@ -156,8 +199,11 @@ class Map(object):
         """
         destinations=set()
         if not cargotype:
-            cargotype=[None]
+            cargotype=self.getAllCargoTypes()
         for ct in cargotype:
+            if not self.isDemand(ct):
+                print "No demand for %s" % ct
+                continue
             s=set([n for n in self.nodes.values() if n.hasCargo(ct)])
             destinations=destinations.union(s)
         print "findCargo() destinations=%s" % destinations
@@ -217,9 +263,25 @@ class Map(object):
         for b in self.buildings[:]:
             b.turn()
             if b.terminate:
+                b.loc.building=None
                 self.buildings.remove(b)
         for c in self.carters:
-            c.turn()
+            c.turn(self.carters)
+        if random.randrange(100)==1:
+            self.addQuarry()
+            self.addLumberCamp()
+        bs=len([b for b in self.buildings if isinstance(b, building.BuildingSite)])
+        if not bs:
+            self.addBuildingSite()
+
+    ############################################################################
+    def initialResources(self):
+        self.addStoneMason()
+        self.addCarpenter()
+        self.addBuildingSite()
+        self.addLumberCamp()
+        self.addQuarry()
+        self.addCarter()
 
     ############################################################################
     def findGrassland(self):

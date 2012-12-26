@@ -222,8 +222,7 @@ class AStar(object):
                 ny = y + YOFFSET[i]
 
                 # if the next coordinate is walkable, inspect it.
-                if is_walkable(nx, ny, self.n_row, self.n_col, 
-                               self.graph):
+                if is_walkable(nx, ny, self.n_row, self.n_col, self.graph):
                     self._inspect_node((nx, ny), (x, y), False, record)
 
                     # further investigate the diagonal nodes
@@ -233,10 +232,8 @@ class AStar(object):
                     ny2 = y + DBYOFFSET[i]
                     npos = ((nx1, ny1), (nx2, ny2))
                     for nx, ny in npos:
-                        if is_walkable(nx, ny, self.n_row, self.n_col, 
-                                       self.graph):
-                            self._inspect_node((nx, ny), (x, y), 
-                                                True, record)
+                        if is_walkable(nx, ny, self.n_row, self.n_col, self.graph):
+                            self._inspect_node((nx, ny), (x, y), True, record)
             yield
 
     def _retrace(self):

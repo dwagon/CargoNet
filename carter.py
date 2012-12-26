@@ -7,6 +7,7 @@ import pygame
 class Carter(object):
 	def __init__(self, loc, world):
 		self.loc=loc
+		self.size=5		# Maximum amount we can carry
 		self.cargo=None
 		self.world=world
 		self.image=pygame.image.load('images/carter.png')
@@ -15,7 +16,7 @@ class Carter(object):
     ############################################################################
 	def draw(self, screen, xsize, ysize):
 		screen.blit(self.image, self.loc.rect)
-		self.write(screen, "cargo=%s dest=%s" % (self.cargo, self.dest), self.loc.x * xsize, self.loc.y * ysize)
+		self.write(screen, "cargo=%s" % self.cargo, self.loc.x * xsize, self.loc.y * ysize)
 		if self.path:
 			for n in self.path:
 				red=(255,0,0)
@@ -30,34 +31,46 @@ class Carter(object):
 		screen.blit(textobj, textrect)
 
     ############################################################################
-	def turn(self):
+	def turn(self, allcarters):
 		if self.path:
-			self.moveAlongPath()
+			self.moveAlongPath(allcarters)
 			return
 		if self.cargo:
 			if self.loc.needs(self.cargo):
 				self.dropCargo()
-				self.dest, self.path=self.world.findCargo(self.loc)
+			else:
+				print "Looking for demand for %s" % self.cargo
+				self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
 			return
 		if self.loc.cargo:
-			self.pickupCargo()
-			self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
-			return
+			for c in self.loc.cargo:
+				if c.__class__ in self.loc.building.requires:
+					print "Not taking %s as required by %s" % (c, self.loc.building)
+					continue
+				if self.world.isDemand(c):
+					self.pickupCargo(c)
+					self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
+					return
+				else:
+					print "No demand for %s" % c
+		print "Looking for cargo to pick up"
 		self.dest, self.path=self.world.findCargo(self.loc)
 
     ############################################################################
-	def moveAlongPath(self):
-		self.loc=self.world[self.path.pop(0)]
+	def moveAlongPath(self, allcarters):
+		badlocations=[c.loc for c in allcarters if c!=self]
+		if self.path[0] not in badlocations:
+			self.loc=self.world[self.path.pop(0)]
+		else:
+			print "Blocked going to %s" % self.path[0]
 
     ############################################################################
 	def dropCargo(self):
-		print "Drop %s" % self.cargo
 		self.loc.dropCargo(self.cargo)
 		self.cargo=None
 
     ############################################################################
-	def pickupCargo(self):
-		self.cargo=self.loc.getCargo()
-		print "Picked up %s" % self.cargo
+	def pickupCargo(self, c):
+		self.cargo=self.loc.getCargo(typ=c.__class__, maxsize=self.size)
 
 #EOF

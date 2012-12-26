@@ -19,9 +19,7 @@ class Game(object):
         self.wm=smap.Map(windowHeight/32,windowWidth/32)
         self.font = pygame.font.SysFont(None, 24)
         self.turn=0
-        self.initialResources()
-        self.wm.addCarter()
-        #self.wm.addCarter()
+        self.wm.initialResources()
 
     ############################################################################
     def drawMap(self):
@@ -63,16 +61,8 @@ class Game(object):
                 self.terminate()
         self.drawMap()
         pygame.display.update()
-        self.waitForPlayerToPressKey()
+        #self.waitForPlayerToPressKey()
         self.wm.turn()
-
-    ############################################################################
-    def initialResources(self):
-        self.wm.addStoneMason()
-        self.wm.addCarpenter()
-        self.wm.addBuildingSite()
-        self.wm.addLumberCamp()
-        self.wm.addQuarry()
 
 ################################################################################
 def main():
