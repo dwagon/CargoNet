@@ -200,7 +200,7 @@ class Map(object):
             cargotype=self.getAllCargoTypes()
         for ct in cargotype:
             if not self.isDemand(ct):
-                print "No demand for %s" % ct
+                #print "No demand for %s" % ct
                 continue
             s=set([n for n in self.nodes.values() if n.hasCargo(ct)])
             destinations=destinations.union(s)
@@ -262,8 +262,10 @@ class Map(object):
             if b.terminate:
                 b.loc.building=None
                 self.buildings.remove(b)
-        for c in self.carters:
+        for c in self.carters[:]:
             c.turn(self.carters)
+            if c.terminate:
+                self.carters.remove(c)
         if random.randrange(100)==1:
             self.addQuarry()
             self.addLumberCamp()

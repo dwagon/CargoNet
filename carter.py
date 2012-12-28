@@ -9,6 +9,8 @@ class Carter(object):
 		self.loc=loc
 		self.size=5		# Maximum amount we can carry
 		self.cargo=None
+		self.blockedCount=0	# Times that we haven't been able to move
+		self.terminate=False
 		self.world=world
 		self.image=pygame.image.load('images/carter.png')
 		self.dest, self.path=self.world.findCargo(self.loc)
@@ -39,33 +41,43 @@ class Carter(object):
 			if self.loc.needs(self.cargo):
 				self.dropCargo()
 			else:
-				print "Looking for demand for %s" % self.cargo
 				if self.world.isDemand(self.cargo):
 					self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
 				else:
-					print "No demand for current cargo %s" % self.cargo
+					#print "No demand for current cargo %s" % self.cargo
 					self.dropCargo()
 			return
 		if self.loc.cargo:
 			for c in self.loc.cargo:
+				# Don't take cargo from a build that requires that cargo
 				if self.loc.building and c.__class__ in self.loc.building.requires:
-					print "Not taking %s as required by %s" % (c, self.loc.building)
 					continue
 				if self.world.isDemand(c):
 					self.pickupCargo(c)
 					self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
 					return
 				else:
-					print "No demand for %s" % c
+					pass
+					#print "No demand for %s" % c
 		self.dest, self.path=self.world.findCargo(self.loc)
 
     ############################################################################
 	def moveAlongPath(self, allcarters):
-		badlocations=[c.loc for c in allcarters if c!=self]
-		if self.path[0] not in badlocations:
+		blocked=[(c.loc.x,c.loc.y) for c in allcarters if c!=self]
+		#print "path[0]=%s blocked=%s" % (self.path[0], blocked)
+		if self.path[0] not in blocked:
 			self.loc=self.world[self.path.pop(0)]
+			self.blockedCount=0
 		else:
-			print "Blocked going to %s" % self.path[0]
+			self.blockedCount+=1
+			for l in self.loc.neighbours:
+				if (l.x,l.y) not in blocked:
+					self.loc=self.world[(l.x,l.y)]
+					break
+			# Harsh, but a guaranteed logjam breaker
+			if self.blockedCount==10:
+				print "Terminating self"
+				self.terminate=True
 
     ############################################################################
 	def dropCargo(self):
