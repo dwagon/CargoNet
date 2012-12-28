@@ -211,7 +211,7 @@ class BuildingSite(Building):
 					self.requires.remove(c.__class__)
 			c.deplete(amt)
 		if sum(self.amounts.values())==0:
-			self.world.addBuilding(self.becomes, self.loc)
+			self.world.addBuilding(self.becomes, loc=self.loc)
 			self.terminate=True
 
 	############################################################################

@@ -40,11 +40,15 @@ class Carter(object):
 				self.dropCargo()
 			else:
 				print "Looking for demand for %s" % self.cargo
-				self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
+				if self.world.isDemand(self.cargo):
+					self.dest, self.path=self.world.findDemand(self.loc, self.cargo)
+				else:
+					print "No demand for current cargo %s" % self.cargo
+					self.dropCargo()
 			return
 		if self.loc.cargo:
 			for c in self.loc.cargo:
-				if c.__class__ in self.loc.building.requires:
+				if self.loc.building and c.__class__ in self.loc.building.requires:
 					print "Not taking %s as required by %s" % (c, self.loc.building)
 					continue
 				if self.world.isDemand(c):
@@ -53,7 +57,6 @@ class Carter(object):
 					return
 				else:
 					print "No demand for %s" % c
-		print "Looking for cargo to pick up"
 		self.dest, self.path=self.world.findCargo(self.loc)
 
     ############################################################################

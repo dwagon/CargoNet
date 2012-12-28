@@ -24,6 +24,29 @@ class Map(object):
         self.assignNeighbours()
 
     ############################################################################
+    def findGrassland(self):
+        return self.findType('Grassland')
+
+    ############################################################################
+    def findWoodland(self):
+        return self.findType('Woodland')
+
+    ############################################################################
+    def findMountain(self):
+        return self.findType('Mountain')
+
+    ############################################################################
+    def findType(self, typ):
+        nodelist=self.nodes.values()
+        random.shuffle(nodelist)
+        for n in nodelist:
+            if n.__class__.__name__==typ:
+                if n.neighbours:
+                    return n
+        sys.stderr.write("Couldn't find any %s\n" % typ)
+        return None
+
+    ############################################################################
     def addCarter(self, loc=None):
         if not loc:
             loc=self.findGrassland()
@@ -32,62 +55,38 @@ class Map(object):
 
     ############################################################################
     def addQuarry(self, loc=None, count=1):
-        if not loc:
-            loc=self.findMountain()
-            while loc.building:
-                loc=self.findMountain()
-        s=building.Quarry(loc, self, count)
-        loc.building=s
-        self.buildings.append(s)
+        self.addBuilding(building.Quarry, self.findMountain, loc, count)
 
     ############################################################################
     def addLumberCamp(self, loc=None, count=1):
-        if not loc:
-            loc=self.findWoodland()
-            while loc.building:
-                loc=self.findWoodland()
-        s=building.LumberCamp(loc, self, count)
-        loc.building=s
-        self.buildings.append(s)
+        self.addBuilding(building.LumberCamp, self.findWoodland, loc, count)
         
     ############################################################################
     def addBuildingSite(self, loc=None, count=1):
-        if not loc:
-            loc=self.findGrassland()
-            while loc.building:
-                loc=self.findGrassland()
-        d=building.BuildingSite(loc, self, count)
-        loc.building=d
-        self.buildings.append(d)
+        self.addBuilding(building.BuildingSite, self.findGrassland, loc, count)
 
     ############################################################################
-    def addBuilding(self, build, loc=None, count=1):
-        print "addBuilding(build=%s, loc=%s)" % (build, loc)
-        if not loc:
-            loc=self.findGrassland()
+    def addBuilding(self, build, locfinder=None, loc=None, count=1):
+        attempts=10
+        if not loc and locfinder:
+            loc=locfinder()
+            while loc.building and attempts:
+                loc=locfinder()
+                attempts-=1
+        if not attempts:
+            print "Couldn't find room for a %s" % build.__class__.__name__
+            return
         d=build(loc, self, count)
         loc.building=d
         self.buildings.append(d)
 
     ############################################################################
     def addStoneMason(self, loc=None, count=1):
-        if not loc:
-            loc=self.findGrassland()
-            while loc.building:
-                loc=self.findGrassland()
-        d=building.StoneMason(loc, self, count)
-        loc.building=d
-        self.buildings.append(d)
+        self.addBuilding(building.StoneMason, self.findGrassland, loc, count)
 
     ############################################################################
     def addCarpenter(self, loc=None, count=1):
-        if not loc:
-            loc=self.findGrassland()
-            while loc.building:
-                loc=self.findGrassland()
-        d=building.Carpenter(loc, self, count)
-        loc.building=d
-        self.buildings.append(d)
+        self.addBuilding(building.Carpenter, self.findGrassland, loc, count)
 
     ############################################################################
     def generateMap(self):
@@ -177,7 +176,6 @@ class Map(object):
         for b in self.buildings:
             if b.needs(demandtype):
                 destinations.append(b.loc)
-        print "findDemand() destinations=%s" % destinations
         return self.findRoute(loc, destinations)
 
     ############################################################################
@@ -206,7 +204,6 @@ class Map(object):
                 continue
             s=set([n for n in self.nodes.values() if n.hasCargo(ct)])
             destinations=destinations.union(s)
-        print "findCargo() destinations=%s" % destinations
         return self.findRoute(loc, list(destinations))
 
     ############################################################################
@@ -283,27 +280,5 @@ class Map(object):
         self.addQuarry()
         self.addCarter()
 
-    ############################################################################
-    def findGrassland(self):
-        return self.findType('Grassland')
-
-    ############################################################################
-    def findWoodland(self):
-        return self.findType('Woodland')
-
-    ############################################################################
-    def findMountain(self):
-        return self.findType('Mountain')
-
-    ############################################################################
-    def findType(self, typ):
-        nodelist=self.nodes.values()
-        random.shuffle(nodelist)
-        for n in nodelist:
-            if n.__class__.__name__==typ:
-                if n.neighbours:
-                    return n
-        sys.stderr.write("Couldn't find any %s\n" % typ)
-        return None
 
 #EOF
