@@ -23,45 +23,50 @@
 from math import hypot
 from heapq import *
 
-XOFFSET   = (0, 1, 0, -1)
-YOFFSET   = (-1, 0, 1, 0)
+XOFFSET = (0, 1, 0, -1)
+YOFFSET = (-1, 0, 1, 0)
 DAXOFFSET = (1, 1, -1, -1)
 DAYOFFSET = (-1, 1, 1, -1)
-DBXOFFSET = (-1, 1, 1, -1) 
+DBXOFFSET = (-1, 1, 1, -1)
 DBYOFFSET = (-1, -1, 1, 1)
 
 UNBLOCKED = '0'
 BLOCKED = '1'
-SOURCE  = 'S'
-TARGET  = 'T'
+SOURCE = 'S'
+TARGET = 'T'
 
 OPENED = 'P'
 CLOSED = 'C'
 
 SCALE = 10
-DIST  = 10
-DDIST = 14 # diagonal distance
+DIST = 10
+DDIST = 14  # diagonal distance
 
 MANHATTAN = 0
 EUCLIDEAN = 1
 CHEBYSHEV = 2
 
-class InvalidMap(Exception): pass
+
+class InvalidMap(Exception):
+    pass
+
 
 def is_walkable(x, y, nr, nc, m):
     """Return whether the given coordinate resides inside the map
     and its status is NORMAL.
     """
     return x >= 0 and x < nc and \
-           y >= 0 and y < nr and \
-           m[y][x] != BLOCKED
+        y >= 0 and y < nr and \
+        m[y][x] != BLOCKED
+
 
 class _Node(object):
+
     """This class works as the container of the nodes' info.
     Refer to the class AStar's documents for the meanings
     of g, h and f.
     """
-    __slots__ = ['parent', 'status', 'f', 'g', 'h'];
+    __slots__ = ['parent', 'status', 'f', 'g', 'h']
 
     def __init__(self):
         self.status = None
@@ -70,7 +75,9 @@ class _Node(object):
         self.h = None
         self.f = None
 
+
 class _QNode(object):
+
     """This class is used for storing the coordinates of the 
     opened nodes in the open list. It provides a comparison 
     method used by the priority queue.
@@ -100,6 +107,7 @@ class _QNode(object):
 
 
 class AStar(object):
+
     """Each node has three main properties:
         F, G and H 
           where
@@ -122,7 +130,8 @@ class AStar(object):
     The higher the W value is, The more important the heuristic will
     be in this algorithm.
     """
-    def __init__(self, raw_graph, heuristic = MANHATTAN):
+
+    def __init__(self, raw_graph, heuristic=MANHATTAN):
         """Create a new instance of A* path finder.
 
         :Parameters:
@@ -158,8 +167,8 @@ class AStar(object):
 
         # 2D array of nodes
         self.nodes = [[_Node()
-                        for x in xrange(self.n_col)]
-                            for y in xrange(self.n_row)]
+                       for x in xrange(self.n_col)]
+                      for y in xrange(self.n_row)]
 
         # get source and target coordinates
         for y in xrange(self.n_row):
@@ -168,16 +177,16 @@ class AStar(object):
                     self.source = (x, y)
                 elif self.graph[y][x] == TARGET:
                     self.target = (x, y)
-        
+
         # guarantee that both source and target is present on the graph
         if not all((self.source, self.target)):
             raise InvalidMap("No source or target given")
 
-        # a priority queue holding the coordinates waiting 
+        # a priority queue holding the coordinates waiting
         # for inspection
         self.open_list = []
 
-    def step(self, record = None):
+    def step(self, record=None):
         """Starts the computation of the shortest path.
         *Note* : 
             This function works as a generator, a yield statement 
@@ -208,7 +217,7 @@ class AStar(object):
             if record != None:
                 record.append(('CLOSE', (x, y)))
 
-            # if the node is the target, reconstruct the path 
+            # if the node is the target, reconstruct the path
             # and break the loop
             if (x, y) == self.target:
                 self._retrace()
@@ -246,7 +255,6 @@ class AStar(object):
             self.path.append(self.nodes[y][x].parent)
         self.path.reverse()
 
-
     def _inspect_node(self, node_pos, parent_pos, diagonal, record):
         """Push the node into the open list if this node is not 
         in the open list. Otherwise, if the node can be accessed 
@@ -262,13 +270,12 @@ class AStar(object):
                 if record != None:
                     record.append(('OPEN', (x, y)))
                 self._try_update((x, y), (px, py), diagonal, record)
-                heappush(self.open_list, 
+                heappush(self.open_list,
                          _QNode((x, y), self.nodes))
             else:
-                if self._try_update((x, y), (px, py), diagonal, 
+                if self._try_update((x, y), (px, py), diagonal,
                                     record):
                     heapify(self.open_list)
-
 
     def _try_update(self, node_pos, parent_pos, diagonal, record):
         """Try to update the node's info with the given parent.
@@ -280,12 +287,12 @@ class AStar(object):
         """
         x, y = node_pos
         px, py = parent_pos
-        dd = DDIST if diagonal else DIST # whether is diagonal
-        ng = self.nodes[py][px].g + dd # next G value
+        dd = DDIST if diagonal else DIST  # whether is diagonal
+        ng = self.nodes[py][px].g + dd  # next G value
         node = self.nodes[y][x]
 
         if node.g == None or ng < node.g:
-            # if this node has not been opened or 
+            # if this node has not been opened or
             # it can be accessed with lower cost
             node.parent = (px, py)
             node.g = ng
@@ -299,7 +306,6 @@ class AStar(object):
                 record.append(('PARENT', ((x, y), (px, py))))
             return True
         return False
-        
 
     def _calc_h(self, pos):
         """Caculate the H value of the node.
@@ -313,9 +319,10 @@ class AStar(object):
 
     def _euclidean(self, dx, dy):
         return int(hypot(dx, dy) * SCALE)
-    
+
     def _chebyshev(self, dx, dy):
         return max(dx, dy) * SCALE
+
 
 def _test():
     nodes_map_raw = '''
@@ -361,7 +368,7 @@ def _test():
                     print 'X',
                 else:
                     print ' ',
-            print 
+            print
         print 'Route length:', len(path)
     else:
         print 'Failed to find the path'
@@ -370,4 +377,4 @@ if __name__ == '__main__':
     from cProfile import Profile
     p = Profile()
     p.runcall(_test)
-    p.print_stats(sort = 1)
+    p.print_stats(sort=1)
